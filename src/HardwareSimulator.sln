@@ -1,0 +1,48 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31515.178
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServerlessAnalysis", "HardwareSimulator\ServerlessAnalysis.csproj", "{05BBBCF9-1949-4583-B24C-1C45D2443F4C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HardwareSimulatorLib", "HardwareSimulatorLib\HardwareSimulatorLib.csproj", "{17220D20-1C70-4C79-A9E4-1557296E9873}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "ScopeExe", "ScopeExe\ScopeExe.shproj", "{3601AD75-0A81-49E1-A191-2D45A048A52B}"
+EndProject
+Global
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		ScopeExe\ScopeExe.projitems*{05bbbcf9-1949-4583-b24c-1c45d2443f4c}*SharedItemsImports = 4
+		ScopeExe\ScopeExe.projitems*{17220d20-1c70-4c79-a9e4-1557296e9873}*SharedItemsImports = 4
+		ScopeExe\ScopeExe.projitems*{3601ad75-0a81-49e1-a191-2d45a048a52b}*SharedItemsImports = 13
+	EndGlobalSection
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
+		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{05BBBCF9-1949-4583-B24C-1C45D2443F4C}.Debug|Any CPU.ActiveCfg = Release|Any CPU
+		{05BBBCF9-1949-4583-B24C-1C45D2443F4C}.Debug|Any CPU.Build.0 = Release|Any CPU
+		{05BBBCF9-1949-4583-B24C-1C45D2443F4C}.Debug|x64.ActiveCfg = Debug|x64
+		{05BBBCF9-1949-4583-B24C-1C45D2443F4C}.Debug|x64.Build.0 = Debug|x64
+		{05BBBCF9-1949-4583-B24C-1C45D2443F4C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{05BBBCF9-1949-4583-B24C-1C45D2443F4C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{05BBBCF9-1949-4583-B24C-1C45D2443F4C}.Release|x64.ActiveCfg = Release|x64
+		{05BBBCF9-1949-4583-B24C-1C45D2443F4C}.Release|x64.Build.0 = Release|x64
+		{17220D20-1C70-4C79-A9E4-1557296E9873}.Debug|Any CPU.ActiveCfg = Release|Any CPU
+		{17220D20-1C70-4C79-A9E4-1557296E9873}.Debug|Any CPU.Build.0 = Release|Any CPU
+		{17220D20-1C70-4C79-A9E4-1557296E9873}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{17220D20-1C70-4C79-A9E4-1557296E9873}.Debug|x64.Build.0 = Debug|Any CPU
+		{17220D20-1C70-4C79-A9E4-1557296E9873}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{17220D20-1C70-4C79-A9E4-1557296E9873}.Release|Any CPU.Build.0 = Release|Any CPU
+		{17220D20-1C70-4C79-A9E4-1557296E9873}.Release|x64.ActiveCfg = Release|Any CPU
+		{17220D20-1C70-4C79-A9E4-1557296E9873}.Release|x64.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {0A70E11F-30C0-466F-99DB-AE1DBB1DD9F7}
+	EndGlobalSection
+EndGlobal

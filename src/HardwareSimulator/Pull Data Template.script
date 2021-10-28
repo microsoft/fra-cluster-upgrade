@@ -1,0 +1,164 @@
+﻿#DECLARE startDate string = "%start_date%";
+#DECLARE endDate string = "%end_date%";
+#DECLARE region string = "%region%";
+#DECLARE hardwareGeneration string ="%hardware_generation%";
+
+#DECLARE outputFilePathDisk string = string.Format("/local/users/%username%/HardwareSimulatorData/RgLoad_Data_{0}_{1:yyyyMMdd}-{2:yyyyMMdd}.tsv", @region, 
+DateTime.Parse(@startDate), 
+DateTime.Parse(@endDate));
+
+rs1 =
+    VIEW "/shares/SQLDB.Prod/local/SqlAzure/Production/Views/Public/MonRgManager.view"
+    PARAMS
+    (
+        startDate = @startDate,
+        endDate = @endDate
+    );
+
+rs1 =
+    SELECT timestamp_DT_DateTime AS timestamp,
+           ClusterName_DT_String AS ClusterName,
+           MachineName_DT_String AS MachineName,
+           AppName_DT_String AS AppName,
+           metric_name_DT_String AS metric_name,
+           metric_value_DT_Int32 AS metric_value,
+           eventName_DT_String AS eventName
+    FROM rs1
+    WHERE AppTypeName IN("Worker.ISO", "Worker.ISO.Premium","Worker.Vldb.Compute","Worker.Vldb.Storage");
+
+rs3 =
+    SELECT timestamp,
+           ClusterName,
+           MachineName,
+           AppName,
+           metric_name,
+           metric_value
+    FROM rs1
+    WHERE ClusterName.Contains(@region)
+          AND eventName == "sql_plb_metrics_reporting"
+          AND metric_name IN("AppCpuUsage", "InstanceDiskSpaceUsed", "AppMemoryUsageMB");
+
+#IF(!string.IsNullOrWhiteSpace(@hardwareGeneration))
+    CapacityTenantSnapshotView= VIEW "/shares/SQLDB.Prod/local/SqlAzure/Production/Views/Public/MonCapacityTenantSnapshot.view"
+    PARAMS (startDate=@endDate, endDate=@endDate);
+
+    SqlDBTRs = SELECT tenant_ring_name AS ClusterName,
+                  vm_size AS VMSize
+           FROM CapacityTenantSnapshotView
+           WHERE string.IsNullOrWhiteSpace(placement_affinity_tag) AND
+                 placement_base_weight == 1 AND
+                 vm_size == @hardwareGeneration AND
+                 ClusterName.Contains(@region)
+           GROUP BY ClusterName, VMSize;
+
+    rs3 = SELECT * FROM rs3 AS A SEMIJOIN SqlDBTRs AS B ON A.ClusterName == B.ClusterName;
+#ENDIF
+
+
+rs3 = REDUCE rs3 ON ClusterName, MachineName, AppName PRESORT timestamp, metric_name USING WorkloadReducer; 
+
+// Get the SLO name associated with each appname
+DBSnapshot = VIEW "/shares/SQLDB.Prod/local/SqlAzure/Production/Views/Public/MonAnalyticsDBSnapshot.view"
+PARAMS
+    (
+        startDate = DateTime.Parse(@startDate).AddDays( - 3).ToString("yyyy-MM-dd"),
+        endDate = @endDate
+    );
+
+SLOs =
+    SELECT tenant_ring_name AS ClusterName, 
+           sql_instance_name AS AppName,
+           ARGMAX(timestamp_DT_DateTime, service_level_objective) AS SloName
+    FROM DBSnapshot
+    WHERE tenant_ring_name.Contains(@region)
+    HAVING !string.IsNullOrWhiteSpace(SloName);
+
+withSloName =
+    SELECT rs3.timestamp,
+           rs3.ClusterName.Split('.')[0] AS ClusterId,
+           rs3.MachineName,
+           rs3.AppName,
+           rs3.AppCpuUsage,
+           rs3.InstanceDiskSpaceUsed,
+           rs3.AppMemoryUsageMB,
+           SLOs.SloName
+    FROM rs3
+         INNER JOIN
+             SLOs
+         ON rs3.AppName == SLOs.AppName AND rs3.ClusterName == SLOs.ClusterName;
+
+OUTPUT (SELECT * FROM withSloName  ORDER BY ClusterId, MachineName, AppName, timestamp ASC)
+TO @outputFilePathDisk;
+
+#CS
+using ScopeRuntime;
+using System.Collections.Generic;
+
+public class WorkloadReducer : Reducer
+{
+    public  readonly string ClusterNameColName = "ClusterName";
+    public readonly string TimestampColName = "timestamp";
+    public readonly string MachineNameColName = "MachineName";
+    public readonly string AppNameColName = "AppName";
+
+    public readonly string MetricNameColName = "metric_name";
+    public readonly string MetricValueColName = "metric_value";
+    public readonly string AppCpuUsageMetricName = "AppCpuUsage";
+    public readonly string InstanceDiskSpaceUsedMetricName = "InstanceDiskSpaceUsed";
+    public readonly string AppMemoryUsageMBMetricName = "AppMemoryUsageMB";
+
+    public override Schema Produces(string[] columns, string[] args, Schema input)
+    {
+        var schema = new Schema();
+        schema.Add(input[input[TimestampColName]]);
+        schema.Add(input[input[ClusterNameColName]]);
+        schema.Add(input[input[MachineNameColName]]);
+        schema.Add(input[input[AppNameColName]]);
+        schema.Add(new ColumnInfo(AppCpuUsageMetricName, ColumnDataType.Double));
+        schema.Add(new ColumnInfo(InstanceDiskSpaceUsedMetricName, ColumnDataType.Double));
+        schema.Add(new ColumnInfo(AppMemoryUsageMBMetricName, ColumnDataType.Double));
+        return schema;
+    }
+
+    public override IEnumerable<Row> Reduce(RowSet input, Row output, string[] args)
+    {
+
+        double cpuUsage = -1.0;
+        double diskUsage = -1.0;
+        double memoryUsage = -1.0;
+
+        foreach (Row row in input.Rows)
+        {
+            var metric = row[MetricNameColName].String;
+            if (metric == AppCpuUsageMetricName)
+            {
+                cpuUsage = row[MetricValueColName].Double;
+            }
+            if (metric == InstanceDiskSpaceUsedMetricName)
+            {
+                diskUsage = row[MetricValueColName].Double;
+            }
+            if (metric == AppMemoryUsageMBMetricName)
+            {
+                memoryUsage = row[MetricValueColName].Double;
+            }
+
+            if (cpuUsage != -1.0 && diskUsage != -1.0 && memoryUsage != -1.0)
+            {
+                output[TimestampColName].Set(row[TimestampColName].Value);
+                output[ClusterNameColName].Set(row[ClusterNameColName].Value);
+                output[MachineNameColName].Set(row[MachineNameColName].Value);
+                output[AppNameColName].Set(row[AppNameColName].Value);
+                output[AppCpuUsageMetricName].Set(cpuUsage);
+                output[InstanceDiskSpaceUsedMetricName].Set(diskUsage);
+                output[AppMemoryUsageMBMetricName].Set(memoryUsage);
+                yield return output;
+
+                cpuUsage = -1.0;
+                diskUsage = -1.0;
+                memoryUsage = -1.0;
+            }
+        }
+    }
+}
+#ENDCS

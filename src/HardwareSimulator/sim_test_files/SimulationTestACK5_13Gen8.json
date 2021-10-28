@@ -1,0 +1,46 @@
+{
+  "ScopeSDK": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\Enterprise\\Common7\\IDE\\Extensions\\Microsoft\\ScopeStudio\\2.7.0000.4\\CosmosRuntimeSDK\\scope.exe",
+  "RunsPerConfiguration": 20,
+  "SimulationDurationInHours": 300,
+  "WarmupInHours": 50,
+  "SkipDataGeneration": true,
+  "DataFile": "E:\\chrisko\\trace\\2week\\westus\\Test_westus1-a_20201108to1121_AllTR_DiskMem.txt",
+  "EnableSloOutput": true,
+  "UseOnlyNewTenants": true,
+  "ExtrapolateGrowingTenants": true,
+  "AllowTenantPlacementFailures": false,
+  "SearchSpace": {
+    "OverbookingRatios": [ 1.3 ],
+    "MemorySizesInGB": [ 441 ],
+    "DiskSizesInGB": [ 5238 ],
+    "VCoresPerNode": [ 128 ],
+    "DiskCaps": [ 0.68 ],
+    "MemoryCaps": [ 0.85 ],
+    "CpuCaps": [ 0.80 ]
+  },
+  "ClusterConfiguration": {
+    "Nodes": 40,
+    "vCoreOverheadPerNode": 2,
+    "MemoryOverheadPerNodeInGB": 20,
+    "DiskOverheadPerNodeInGB": 100
+  },
+  "DataRange": {
+    "Region": "westus1-a",
+    "StartDate": "2020-06-08",
+    "EndDate": "2020-06-14",
+    "HardwareGeneration": "SQLG4VM"
+  },
+  "PlacementAlgorithm": {
+    "PlacementHeuristic": [ "WorstFitProbabilityViolation", "WorstFitProbabilityViolation", "WorstFitProbabilityViolation", "WorstFitProbabilityViolation", "BestFitProbabilityViolation", "WorstFitProbabilityViolation", "WorstFitProbabilityViolation", "WorstFitProbabilityViolation", "WorstFitProbabilityViolation", "BestFitProbabilityViolation" ],
+    "MetricToUseForPlacement": [ "PredictedMaxValue", "PredictedMaxValue", "PredictedMaxValue", "PredictedMaxValue", "PredictedMaxValue", "PredictedMaxValue", "PredictedMaxValue", "PredictedMaxValue", "PredictedMaxValue", "PredictedMaxValue" ],
+    "MetricToUseForNodeLoad": [ "CurrentValue", "CurrentValue", "CurrentValue", "CurrentValue", "CurrentValue", "CurrentValue", "CurrentValue", "CurrentValue", "CurrentValue", "CurrentValue" ],
+    "ConflictResolutionHeuristic": [ "LeastCongested", "LeastCongested", "LeastCongested", "LeastCongested", "LeastCongested", "LeastCongested", "LeastCongested", "LeastCongested", "LeastCongested", "LeastCongested" ],
+    "MetricToUse": [ "All", "All", "All", "All", "All", "All", "All", "All", "All", "All" ],
+    "UsageCurve": [ "Real", "Real", "Real", "Real", "Real", "Real", "Real", "Real", "Real", "Real" ],
+    "NodesToReserve": [ 4, 3, 2, 1, -1, 4, 3, 2, 1, -1 ],
+    "PenaltiesParameterThreshold": [ 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25 ],
+    "ProbabilityOfViolationThreshold": [ 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01 ],
+    "ProbabilityOfViolationMCRepetitions": [ 100, 100, 100, 100, 100, 100, 100, 100, 100, 100 ],
+    "MetricWeightingScheme": [ "MinWeight", "MinWeight", "MinWeight", "MinWeight", "MinWeight", "FFSumWeight", "FFSumWeight", "FFSumWeight", "FFSumWeight", "FFSumWeight" ]
+  }
+}

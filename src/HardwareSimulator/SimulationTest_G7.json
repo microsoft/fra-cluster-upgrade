@@ -1,0 +1,29 @@
+{
+	"ScopeSDK": "C:\\Users\\andyjing\\Documents\\CosmosRuntimeSDK\\Scope.exe",
+	"RunsPerConfiguration": 300,
+	"SimulationDurationInHours": 167,
+	"SkipDataGeneration": true,
+	"EnableSloOutput": true,
+	"StartConfigurationId" : 212,
+	"SearchSpace": {
+		"OverbookingRatios": [1.2, 1.5, 1.8, 2.1, 2.4, 2.7 ],
+		"MemorySizesInGB": [504, 704, 904, 1024],
+		"DiskSizesInGB": [5600, 9600, 13600, 17600, 23552],
+		"VCoresPerNode" : [104, 114, 128],
+		"DiskCaps": [ 0.68 ],
+		"MemoryCaps": [ 0.85 ],
+		"CpuCaps": [ 0.95 ]
+	},
+	"ClusterConfiguration": {
+		"Nodes": 50,
+		"vCoreOverheadPerNode": 8,
+		"MemoryOverheadPerNodeInGB": 20,
+		"DiskOverheadPerNodeInGB": 200
+	},
+	"DataRange": {
+		"Region": "westeurope1-a",
+		"StartDate": "2020-03-09",
+		"EndDate": "2020-03-15",
+		"HardwareGeneration": "SQLG5"
+	}
+}

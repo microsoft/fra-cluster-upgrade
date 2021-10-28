@@ -1,0 +1,29 @@
+{
+	"ScopeSDK": "C:\\Users\\andyjing\\Documents\\CosmosRuntimeSDK\\Scope.exe",
+	"RunsPerConfiguration": 500,
+	"SimulationDurationInHours": 167,
+	"SkipDataGeneration": true,
+	"DataFile": "C:\\Users\\andyjing\\source\\repos\\DSBA-DataSciEng\\Projects\\HardwareSimulator\\HardwareSimulator\\bin\\Debug\\RgLoad_Data_eastus1-a_20200203-20200209.tsv",
+	"EnableSloOutput": true,
+	"SearchSpace": {
+		"OverbookingRatios": [ 1.2, 1.3, 1.4, 1.5, 1.6 ],
+		"MemorySizesInGB": [ 192 ],
+		"DiskSizesInGB": [ 1920 ],
+		"VCoresPerNode": [24],
+		"DiskCaps": [ 0.68 ],
+		"MemoryCaps": [ 0.85 ],
+		"CpuCaps": [ 0.95 ]
+	},
+	"ClusterConfiguration": {
+		"Nodes": 200,
+		"vCoreOverheadPerNode": 2,
+		"MemoryOverheadPerNodeInGB": 20,
+		"DiskOverheadPerNodeInGB": 200
+	},
+	"DataRange": {
+		"Region": "eastus1-a",
+		"StartDate": "2020-02-03",
+		"EndDate": "2020-02-09",
+		"HardwareGeneration": "SQLG4VM"
+	}
+}

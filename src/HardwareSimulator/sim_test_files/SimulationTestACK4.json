@@ -1,0 +1,43 @@
+{
+  "ScopeSDK": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\Enterprise\\Common7\\IDE\\Extensions\\Microsoft\\ScopeStudio\\2.5.1000.2\\CosmosRuntimeSDK\\scope.exe",
+  "RunsPerConfiguration": 1,
+  "SimulationDurationInHours": 200,
+  "WarmupInHours": 50,
+  "SkipDataGeneration": true,
+  "DataFile": "E:\\Data\\Trace\\RgLoad_Data_eastus1-a_20200701-20200714.tsv",
+  "EnableSloOutput": true,
+  "UseOnlyNewTenants": true,
+  "SearchSpace": {
+    "OverbookingRatios": [ 1.2, 1.3, 1.4, 1.5, 1.6 ],
+    "MemorySizesInGB": [ 441 ],
+    "DiskSizesInGB": [ 5238 ],
+    "VCoresPerNode": [ 80 ],
+    "DiskCaps": [ 0.68 ],
+    "MemoryCaps": [ 0.85 ],
+    "CpuCaps": [ 0.80 ]
+  },
+  "ClusterConfiguration": {
+    "Nodes": 40,
+    "vCoreOverheadPerNode": 2,
+    "MemoryOverheadPerNodeInGB": 20,
+    "DiskOverheadPerNodeInGB": 100
+  },
+  "DataRange": {
+    "Region": "westus1-a",
+    "StartDate": "2020-06-08",
+    "EndDate": "2020-06-14",
+    "HardwareGeneration": "SQLG4VM"
+  },
+  "PlacementAlgorithm": {
+    "PlacementHeuristic": [ "WorstFitProbabilityViolation", "WorstFitProbabilityViolation", "WorstFitProbabilityViolation", "Penalties", "WorstFit", "MinStdDiv", "DotProduct", "L2Norm" ],
+    "MetricToUseForPlacement": [ "PredictedMaxValue", "PredictedMaxValue", "PredictedMaxValue", "PredictedMaxValue", "PredictedMaxValue", "PredictedMaxValue", "PredictedMaxValue", "PredictedMaxValue" ],
+    "MetricToUseForNodeLoad": [ "CurrentValue", "CurrentValue", "CurrentValue", "CurrentValue", "CurrentValue", "CurrentValue", "CurrentValue", "CurrentValue" ],
+    "ConflictResolutionHeuristic": [ "LeastCongested", "LeastCongested", "LeastCongested", "LeastCongested", "LeastCongested", "LeastCongested", "LeastCongested", "LeastCongested" ],
+    "MetricToUse": [ "All", "All", "All", "All", "All", "All", "All", "All" ],
+    "UsageCurve": [ "Real", "Real", "Real", "Real", "Real", "Real", "Real", "Real" ],
+    "PenaltiesParameterNodesToReserve": [ 4, 3, 3, 3, -1, -1, -1, -1 ],
+    "PenaltiesParameterThreshold": [ 0.25, 0.25, 0.25, 0.25, -1, -1, -1, -1 ],
+    "ProbabilityOfViolationThreshold": [ 0.01, 0.01, 0.001, 1, 1, 1, 1, 1 ],
+    "ProbabilityOfViolationMCRepetitions": [ 1000, 1000, 1000, 1000, 1000 ]
+  }
+}

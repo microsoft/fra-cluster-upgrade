@@ -1,0 +1,42 @@
+{
+  "ScopeSDK": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\Common7\\IDE\\Extensions\\Microsoft\\ScopeStudio\\2.4.8000.2\\CosmosRuntimeSDK\\scope.exe",
+  "RunsPerConfiguration": 5,
+  "SimulationDurationInHours": 2000,
+  "WarmupInHours": 50,
+  "SkipDataGeneration": true,
+  "DataFile": "E:\\Data\\Trace\\RgLoad_Data_westus1-a_20200608-20200614_Gen5.tsv",
+  "EnableSloOutput": true,
+  "SearchSpace": {
+    "OverbookingRatios": [ 1.2 ],
+    "MemorySizesInGB": [ 441 ],
+    "DiskSizesInGB": [ 5238 ],
+    "VCoresPerNode": [ 80 ],
+    "DiskCaps": [ 0.68 ],
+    "MemoryCaps": [ 0.85 ],
+    "CpuCaps": [ 0.80 ]
+  },
+  "ClusterConfiguration": {
+    "Nodes": 40,
+    "vCoreOverheadPerNode": 2,
+    "MemoryOverheadPerNodeInGB": 20,
+    "DiskOverheadPerNodeInGB": 100
+  },
+  "DataRange": {
+    "Region": "westus1-a",
+    "StartDate": "2020-06-08",
+    "EndDate": "2020-06-14",
+    "HardwareGeneration": "SQLG4VM"
+  },
+  "PlacementAlgorithm": {
+    "PlacementHeuristic": [ "Penalties", "Bestfit", "WorstFit", "MinStdDiv" ],
+    "MetricToUseForPlacement": [ "MaxValue", "MaxValue", "MaxValue", "MaxValue" ],
+    "MetricToUseForNodeLoad": [ "LookaheadByLifetime", "LookaheadByLifetime", "LookaheadByLifetime", "LookaheadByLifetime" ],
+    "ConflictResolutionHeuristic": [ "LeastCongested", "LeastCongested", "LeastCongested", "LeastCongested" ],
+    "MetricToUse": [ "IDSUonly", "IDSUonly", "IDSUonly", "IDSUonly" ],
+    "UsageCurve": [ "Real", "Real", "Real", "Real" ],
+    "PenaltiesParameterNodesToReserve": [ 3, -1, -1, -1, -1 ],
+    "PenaltiesParameterThreshold": [ 0.25, -1, -1, -1, -1 ],
+    "ProbabilityOfViolationThreshold": [ 1, 1, 1, 1, 1 ],
+    "ProbabilityOfViolationMCRepetitions": [ 1000, 1000, 1000, 1000, 1000 ]
+  }
+}

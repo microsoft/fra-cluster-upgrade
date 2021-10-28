@@ -1,0 +1,109 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{17220D20-1C70-4C79-A9E4-1557296E9873}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>HardwareSimulatorLib</RootNamespace>
+    <AssemblyName>HardwareSimulatorLib</AssemblyName>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <Deterministic>true</Deterministic>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>_bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.10.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="ScopeRuntime">
+      <HintPath>..\..\..\..\..\Program Files (x86)\Microsoft Visual Studio\2019\Community\Common7\IDE\Extensions\Microsoft\ScopeStudio\2.4.8000.2\U-SQLSDK\ScopeRuntime.exe</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Net" />
+    <Reference Include="System.Net.Http.WebRequest" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.Web.Extensions" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Cluster\ClusterManager.cs" />
+    <Compile Include="Cluster\Placement\Impl\ProbabilityViolationSelector.cs" />
+    <Compile Include="Cluster\Placement\Impl\ProbabilityViolationWorstFitUpgradeSelector.cs" />
+    <Compile Include="Cluster\Placement\Impl\WorstFitUpgradeSelector.cs" />
+    <Compile Include="Cluster\Placement\PlacementPreference.cs" />
+    <Compile Include="Cluster\Placement\Impl\BestFitSelector.cs" />
+    <Compile Include="Cluster\Placement\Impl\DotProductSelector.cs" />
+    <Compile Include="Cluster\Placement\Impl\InnerProductSelector.cs" />
+    <Compile Include="Cluster\Placement\Impl\L2NormSelector.cs" />
+    <Compile Include="Cluster\Placement\Impl\MinStdDivSelector.cs" />
+    <Compile Include="Cluster\Placement\Impl\PenaltiesSelector.cs" />
+    <Compile Include="Cluster\Placement\Impl\ProbabilityViolationBestFitSelector.cs" />
+    <Compile Include="Cluster\Placement\Impl\WorstFitSelector.cs" />
+    <Compile Include="Cluster\Placement\PlacementSelector.cs" />
+    <Compile Include="Cluster\Placement\Impl\SumOfSquaresSelector.cs" />
+    <Compile Include="Cluster\Placement\Impl\ProbabilityViolationWorstFitSelector.cs" />
+    <Compile Include="Cluster\Upgrade\Impl\GreedilyFailoverPrimThenStd.cs" />
+    <Compile Include="Cluster\Upgrade\Impl\GreedilyFailoverWithSort.cs" />
+    <Compile Include="Cluster\Upgrade\Impl\GreedilyFailover.cs" />
+    <Compile Include="Cluster\Upgrade\Impl\GreedilyFailoverPrimThenStdWithSort.cs" />
+    <Compile Include="Cluster\Upgrade\UpgradeScheduler.cs" />
+    <Compile Include="Config\ClusterConfiguration.cs" />
+    <Compile Include="Config\DataRange.cs" />
+    <Compile Include="Config\UpgradeAlgo.cs" />
+    <Compile Include="Experiment\SimulationStatistics.cs" />
+    <Compile Include="Experiment\ExperimentStatistics.cs" />
+    <Compile Include="Trace\MonRgManagerInput.cs" />
+    <Compile Include="Config\PlacementAlgo.cs" />
+    <Compile Include="Config\SearchSpace.cs" />
+    <Compile Include="Config\SimulationConfiguration.cs" />
+    <Compile Include="Config\TenantConstraints.cs" />
+    <Compile Include="Slo\Reader\ApplicationConfiguration.cs" />
+    <Compile Include="Experiment\ExperimentParams.cs" />
+    <Compile Include="Slo\Reader\PlacementConfiguration.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Predictor\SloIdToResourceUsageCdf.cs" />
+    <Compile Include="Trace\ReplicaTrace.cs" />
+    <Compile Include="Slo\SloSpecification.cs" />
+    <Compile Include="Trace\ReplicaInfo.cs" />
+    <Compile Include="Experiment\ExperimentRunner.cs" />
+    <Compile Include="Predictor\ViolationPredictor.cs" />
+    <Compile Include="Slo\Reader\XDBSqlInstancePlacementMappingReader.cs" />
+    <Compile Include="Trace\TraceManager.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Slo\Reader\XDBSqlInstancePlacementMappings.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup />
+  <Import Project="..\ScopeExe\ScopeExe.projitems" Label="Shared" />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

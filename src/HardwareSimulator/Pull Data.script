@@ -1,0 +1,102 @@
+﻿#DECLARE startDate string = "2020-01-10";
+#DECLARE endDate string = "2020-01-11";
+#DECLARE region string = "westus2";
+
+#DECLARE outputFilePathDisk string = string.Format("/local/users/adashi/overbooking/AzureResourceUsage/RgLoad_Data_{0}_{1:yyyyMMdd}-{2:yyyyMMdd}.tsv", @region, 
+DateTime.Parse(@startDate), 
+DateTime.Parse(@endDate));
+
+//rs1 =
+//    VIEW "/shares/SQLDB.Prod/local/SqlAzure/Production/Views/Public/MonRgManager.view"
+//    PARAMS
+//    (
+//        startDate = @startDate,
+//        endDate = @endDate
+//    );
+
+
+rs1 =
+    SSTREAM STREAMSET "/shares/SQLDB.Prod/local/SqlAzure/Production/ssDaily/MonRgManager"
+            PATTERN "/%Y%m%d.ss"
+            RANGE __date = [@startDate, @endDate];
+
+rs1 =
+    SELECT timestamp_DT_DateTime AS timestamp,
+           ClusterName_DT_String AS ClusterName,
+           MachineName_DT_String AS MachineName,
+           AppName_DT_String AS AppName,
+           metric_name_DT_String AS metric_name,
+           metric_value_DT_Int32 AS metric_value,
+           eventName_DT_String AS eventName
+    FROM rs1;
+
+
+
+
+// Some instances don't have all three metrics; many have the same values multiple times.
+//For 2019-11-23, the count of records for a {timestamp, ClusterId, MachineName, DB} was:
+// 1 : 55
+// 2 : 10
+// 3 : 1519659
+// 4 : 1
+// 6 : 24286
+// 9 : 33
+// 12 : 10
+// When this number is > 3, there exist duplicate records. It appears that in all these cases, it's simply the same record repeated,
+// so we can simply take the distinct values. For simplicity, we flatten by MAX(metric_name == ... ? ... : 0).
+
+rs3 =
+    SELECT timestamp,
+           ClusterName.Split('.') [0]AS ClusterId,
+           MachineName,
+           AppName AS DB,
+           MAX(metric_name == "AppCpuUsage"? metric_value : 0) AS AppCpuUsage,
+           MAX(metric_name == "InstanceDiskSpaceUsed"? metric_value : 0) AS InstanceDiskSpaceUsed,
+           MAX(metric_name == "AppMemoryUsageMB"? metric_value : 0) AS AppMemoryUsageMB,
+           COUNT(DISTINCT metric_name) AS metrics_seen
+    FROM rs1
+    WHERE ClusterName.Contains(@region)
+          AND eventName == "sql_plb_metrics_reporting"
+          // This should probably be used, but I'm omitting it now to make sure I'm at parity when refactoring code and
+          // to confirm the right column (AppName_DT_String vs AppTypeName_DT_String)
+          //          AND AppTypeName IN("Worker.ISO", "Worker.ISO.Premium")
+          AND metric_name IN("AppCpuUsage", "InstanceDiskSpaceUsed", "AppMemoryUsageMB")
+    HAVING metrics_seen == 3;
+
+
+
+
+// Get the SLO name associated with each appname
+resourceStats =
+    VIEW "/shares/SQLDB.Prod/local/SqlAzure/Production/Views/Public/MonDmRealTimeResourceStats.view"
+    PARAMS
+    (
+        startDate = DateTime.Parse(@startDate).AddDays( - 3).ToString("yyyy-MM-dd"),
+        endDate = @endDate
+    );
+
+resourceStats =
+    SELECT ARGMAX(timestamp, slo_name.Substring(0, slo_name.LastIndexOf('_'))) AS SloName,
+           AppName
+    FROM resourceStats
+    WHERE ClusterName.Contains(@region)
+          AND NodeRole == "DB"
+    HAVING !string.IsNullOrEmpty(SloName);
+
+
+withSloName =
+    SELECT rs3.timestamp,
+           rs3.ClusterId,
+           rs3.MachineName,
+           rs3.DB,
+           rs3.AppCpuUsage,
+           rs3.InstanceDiskSpaceUsed,
+           rs3.AppMemoryUsageMB,
+           resourceStats.SloName
+    FROM rs3
+         INNER JOIN
+             resourceStats
+         ON rs3.DB == resourceStats.AppName;
+
+OUTPUT withSloName
+TO @outputFilePathDisk;

@@ -1,0 +1,119 @@
+﻿#DECLARE startDate string = "%start_date%";
+#DECLARE endDate string = "%end_date%";
+#DECLARE region string = "%region%";
+#DECLARE hardwareGeneration string ="%hardware_generation%";
+
+#DECLARE outputFilePathDisk string = string.Format("/local/users/%username%/HardwareSimulatorData/RgLoad_Data_{0}_{1:yyyyMMdd}-{2:yyyyMMdd}.tsv", @region, 
+DateTime.Parse(@startDate), 
+DateTime.Parse(@endDate));
+
+CapacityTenantSnapshotView= VIEW "/shares/SQLDB.Prod/local/SqlAzure/Production/Views/Public/MonCapacityTenantSnapshot.view"
+PARAMS (startDate=@startDate, endDate=@endDate);
+
+rs1 = SELECT tenant_ring_name AS ClusterName,
+                  vm_size AS VMSize
+           FROM CapacityTenantSnapshotView
+           WHERE vm_size == @hardwareGeneration AND
+                 tenant_ring_name.Contains(@region)
+           GROUP BY ClusterName, VMSize;
+
+rs2 =
+    VIEW "/shares/SQLDB.Prod/local/SqlAzure/Production/Views/Public/MonRgLoad.view"
+    PARAMS
+    (
+        startDate = @startDate,
+        endDate = @endDate
+    );
+
+rs3 =
+    SELECT timestamp_DT_DateTime AS timestamp,
+           ClusterName_DT_String AS ClusterName,
+           NodeName_DT_String AS MachineName,
+           application_name_DT_String AS AppName,
+           metric_name_DT_String AS metric_name,
+           metric_value_DT_Int32 AS metric_value,
+           slo_size_DT_String as SloName
+    FROM rs2 SEMIJOIN rs1 ON rs1.ClusterName == rs2.ClusterName_DT_String
+    WHERE application_type_DT_String IN("Worker.ISO", "Worker.ISO.Premium","Worker.Vldb.Compute","Worker.Vldb.Storage")
+          AND metric_name_DT_String IN("AppCpuUsage", "InstanceDiskSpaceUsed", "AppMemoryUsageMB");
+
+rs4 = REDUCE rs3 ON ClusterName, MachineName, AppName, SloName PRESORT timestamp, metric_name USING WorkloadReducer; 
+
+OUTPUT (rs4  ORDER BY ClusterName, MachineName, AppName, timestamp ASC)
+TO @outputFilePathDisk;
+
+#CS
+using ScopeRuntime;
+using System.Collections.Generic;
+
+public class WorkloadReducer : Reducer
+{
+    public readonly string ClusterNameColName = "ClusterName";
+    public readonly string TimestampColName = "timestamp";
+    public readonly string MachineNameColName = "MachineName";
+    public readonly string AppNameColName = "AppName";
+
+    public readonly string MetricNameColName = "metric_name";
+    public readonly string MetricValueColName = "metric_value";
+    public readonly string AppCpuUsageMetricName = "AppCpuUsage";
+    public readonly string InstanceDiskSpaceUsedMetricName = "InstanceDiskSpaceUsed";
+    public readonly string AppMemoryUsageMBMetricName = "AppMemoryUsageMB";
+    public readonly string SLOName = "SloName";
+
+    public override Schema Produces(string[] columns, string[] args, Schema input)
+    {
+        var schema = new Schema();
+        schema.Add(input[input[TimestampColName]]);
+        schema.Add(input[input[ClusterNameColName]]);
+        schema.Add(input[input[MachineNameColName]]);
+        schema.Add(input[input[AppNameColName]]);
+        schema.Add(new ColumnInfo(AppCpuUsageMetricName, ColumnDataType.Double));
+        schema.Add(new ColumnInfo(InstanceDiskSpaceUsedMetricName, ColumnDataType.Double));
+        schema.Add(new ColumnInfo(AppMemoryUsageMBMetricName, ColumnDataType.Double));
+        scehma.Add(input[input[SLOName]]);
+        return schema;
+    }
+
+    public override IEnumerable<Row> Reduce(RowSet input, Row output, string[] args)
+    {
+
+        double cpuUsage = -1.0;
+        double diskUsage = -1.0;
+        double memoryUsage = -1.0;
+
+        foreach (Row row in input.Rows)
+        {
+            var metric = row[MetricNameColName].String;
+            if (metric == AppCpuUsageMetricName)
+            {
+                cpuUsage = row[MetricValueColName].Double;
+            }
+            if (metric == InstanceDiskSpaceUsedMetricName)
+            {
+                diskUsage = row[MetricValueColName].Double;
+            }
+            if (metric == AppMemoryUsageMBMetricName)
+            {
+                memoryUsage = row[MetricValueColName].Double;
+            }
+
+            if (cpuUsage != -1.0 && diskUsage != -1.0 && memoryUsage != -1.0)
+            {
+                output[TimestampColName].Set(row[TimestampColName].Value);
+                output[ClusterNameColName].Set(row[ClusterNameColName].Value);
+                output[MachineNameColName].Set(row[MachineNameColName].Value);
+                output[AppNameColName].Set(row[AppNameColName].Value);
+                output[AppCpuUsageMetricName].Set(cpuUsage);
+                output[InstanceDiskSpaceUsedMetricName].Set(diskUsage);
+                output[AppMemoryUsageMBMetricName].Set(memoryUsage);
+                output[SLOName].Set(row[SLOName].Value);
+                yield return output;
+
+                cpuUsage = -1.0;
+                diskUsage = -1.0;
+                memoryUsage = -1.0;
+            }
+        }
+    }
+}
+#ENDCS

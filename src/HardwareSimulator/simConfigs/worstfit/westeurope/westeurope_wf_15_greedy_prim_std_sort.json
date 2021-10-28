@@ -1,0 +1,55 @@
+{
+  "ScopeSDK": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\Professional\\Common7\\IDE\\Extensions\\Microsoft\\ScopeStudio\\2.9.0000.1\\CosmosRuntimeSDK\\scope.exe",
+  "RunsPerConfiguration": 20,
+  "SimulationDurationInHours": 696,
+  "WarmupInHours": 24,
+  "SkipDataGeneration": true,
+  "DataFile": "E:\\shayi\\westus\\Test_westeurope1-a_20201101to1107_AllTR_DiskMem.txt",
+  "EnableSloOutput": true,
+  "UseOnlyNewTenants": true,
+  "ExtrapolateGrowingTenants": true,
+  "AllowTenantPlacementFailures": false,
+  "ApplyFaultDomainConstraints": true,
+  "OnlyPremiumTenants": false,
+  "LookAheadOffset": 0,
+  "MinPlacementTimeForLookAhead": -1,
+  "SearchSpace": {
+    "OverbookingRatios": [ 1.5 ],
+    "MemorySizesInGB": [ 441 ],
+    "DiskSizesInGB": [ 5238 ],
+    "VCoresPerNode": [ 80 ],
+    "DiskCaps": [ 0.68 ],
+    "MemoryCaps": [ 0.85 ],
+    "CpuCaps": [ 0.80 ]
+  },
+  "ClusterConfiguration": {
+    "Nodes": 40,
+    "vCoreOverheadPerNode": 2,
+    "MemoryOverheadPerNodeInGB": 20,
+    "DiskOverheadPerNodeInGB": 100
+  },
+  "DataRange": {
+    "Region": "westeurope1-wf-15_gpss",
+    "StartDate": "2020-11-01",
+    "EndDate": "2020-11-07",
+    "HardwareGeneration": "SQLG4VM"
+  },
+  "PlacementAlgorithm": {
+    "PlacementHeuristic": [ "WorstFit" ],
+    "MetricToUseForPlacement": [ "PredictedMaxValue" ],
+    "MetricToUseForNodeLoad": [ "CurrentValue" ],
+    "ConflictResolutionHeuristic": [ "LeastCongested" ],
+    "MetricToUse": [ "All" ],
+    "UsageCurve": [ "Real" ],
+    "NodesToReserve": [ 2 ],
+    "PenaltiesParameterThreshold": [ 0.25 ],
+    "ProbabilityOfViolationThreshold": [ 0.01 ],
+    "ProbabilityOfViolationMCRepetitions": [ 100 ],
+    "MetricWeightingScheme": [ "MinWeight" ]
+  },
+  "UpgradeAlgorithm": {
+    "Heuristic": "GreedilyFailoverPrimThenStdWithSort",
+    "IntervalInHours": 360,
+    "ApplyPlacementPreference": false
+  }
+}
