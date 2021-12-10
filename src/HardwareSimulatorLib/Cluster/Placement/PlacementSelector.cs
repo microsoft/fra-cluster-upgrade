@@ -1,4 +1,5 @@
 ﻿using HardwareSimulatorLib.Cluster.Placement.Impl;
+using HardwareSimulatorLib.Cluster.Upgrade;
 using HardwareSimulatorLib.Config;
 using HardwareSimulatorLib.Experiment;
 using HardwareSimulatorLib.Predictor;
@@ -64,7 +65,7 @@ namespace HardwareSimulatorLib.Cluster.Placement
             this.rand = rand;
         }
 
-        protected abstract void CompteNodeScores(string replicaId,
+        protected abstract void ComputeNodeScores(string replicaId,
             double[] nodeIdToCpuUsage, double[] nodeIdToMemoryUsage,
             double[] nodeIdToDiskUsage, double replicaCpuUsage,
             double replicaMemoryUsage, double replicaDiskUsage, int srcNodeId,
@@ -201,77 +202,71 @@ namespace HardwareSimulatorLib.Cluster.Placement
             double replicaMemoryUsage, double replicaDiskUsage,
             int srcNodeId = -1)
         {
-            CompteNodeScores(replicaId, nodeIdToCpuUsage, nodeIdToMemoryUsage,
+            ComputeNodeScores(replicaId, nodeIdToCpuUsage, nodeIdToMemoryUsage,
                 nodeIdToDiskUsage, replicaCpuUsage, replicaMemoryUsage,
                 replicaDiskUsage, srcNodeId, out double[] nodeIdToScore,
                 out double optimalScore);
 
-            // We break nodes into 3 sections.
-            // Section 1 (nodes on lower UDs): 0 to startNodeId - 1
-            // Section 2 (nodes on same UD as srcNodeId): startNodeId to endNodeId - 1
-            // Section 3 (nodes on upper UDs): endNodeId to NumNodes - 1
-            // Based on placementPreference: We prefer nodes on one of the sections where:
-            //      Section 1: 0 to nodePreference - 1
-            //      Section 2: nodePreference to nodePreference + 3
-            //      Section 3: nodePreference + 3 to NumNodes - 1
-            if (ApplyPlacementPreference) {
-            var numNodesMatchingPreference = 0;
-            var scoreToOverwite = optimalScore == double.MaxValue ?
-                0 : double.MaxValue;
-            if (cluster.PlacementPreference == PlacementPreference.LowerUpgradeDomains)
+            if (UpgradeScheduler.IsUpgrading)
             {
-                var nodePreference = cluster.DomainUnderUpgrade * ClusterManager.NumNodesPerUD;
-                for (var nodeId = 0; nodeId < nodePreference; nodeId++)
-                {
-                    if (nodeIdToScore[nodeId] == optimalScore)
-                        numNodesMatchingPreference++;
-                }
-                var preferredOptimalScore = double.MaxValue;
-                if (numNodesMatchingPreference == 0)
-                {
-                    for (var nodeId = 0; nodeId < nodePreference; nodeId++)
-                    {
-                        if (preferredOptimalScore == double.MaxValue ||
-                            // placementPreference is worstFit so minimize
-                            (nodeIdToScore[nodeId] != double.MaxValue &&
-                                nodeIdToScore[nodeId] < preferredOptimalScore))
-                            preferredOptimalScore = nodeIdToScore[nodeId];
-                    }
-                    if (preferredOptimalScore != double.MaxValue)
-                        optimalScore = preferredOptimalScore;
-                }
-                else // numNodesMatchingPreference > 0
-                    for (var nodeId = nodePreference; nodeId < cluster.NumNodes; nodeId++)
-                        nodeIdToScore[nodeId] = scoreToOverwite;
-            }
-            else if (cluster.PlacementPreference == PlacementPreference.UpperUpgradeDomains)
-            {
-                var nodePreference = (cluster.DomainUnderUpgrade + 1) * ClusterManager.NumNodesPerUD;
-                for (var nodeId = nodePreference; nodeId < cluster.NumNodes; nodeId++)
-                {
-                    if (nodeIdToScore[nodeId] == optimalScore)
-                        numNodesMatchingPreference++;
-                }
-                var preferredOptimalScore = double.MaxValue;
-                if (numNodesMatchingPreference == 0)
-                {
-                    for (var nodeId = nodePreference; nodeId < cluster.NumNodes; nodeId++)
-                    {
-                        if (preferredOptimalScore == double.MaxValue ||
-                            // placementPreference is worstFit so minimize
-                            (nodeIdToScore[nodeId] != double.MaxValue &&
-                                nodeIdToScore[nodeId] < preferredOptimalScore))
-                            preferredOptimalScore = nodeIdToScore[nodeId];
-                    }
-                    if (preferredOptimalScore != double.MaxValue)
-                        optimalScore = preferredOptimalScore;
-                }
-                else for (var nodeId = 0; nodeId < nodePreference; nodeId++)
-                        nodeIdToScore[nodeId] = scoreToOverwite;
-            }
+                UpdateScoresBasedOnUDPreferences(nodeIdToScore, ref optimalScore);
             }
 
             return ChooseNode(nodeIdToScore, optimalScore);
+        }
+
+        private void UpdateScoresBasedOnUDPreferences(double[] nodeIdToScore, ref double optimalScore)
+        {
+            if (cluster.PlacementPreference == PlacementPreference.None)
+            {
+                throw new ArgumentException("Cluster is in an upgrade. Placement preference cannot be None.");
+            }
+
+            // if preference is to go to lower UDs yet the lowest UD is under upgrade OR
+            // if preference is to go to upper UDs yet the highest UD is under upgrade then
+            // preferences can be ignored as they have no impact on these failovers.
+            var isPreferenceForLowerUD = cluster.PlacementPreference == PlacementPreference.LowerUpgradeDomains;
+            if (isPreferenceForLowerUD && cluster.DomainUnderUpgrade == 0 ||
+                !isPreferenceForLowerUD && cluster.DomainUnderUpgrade == cluster.NumUDs - 1)
+            {
+                return;
+            }
+
+            // Each node is in either: 1) already upgraded; 2) under upgrade; or 3) to be upgraded.
+            // Due to the direction of ugprades from 0 to cluster.NumNodes or from cluster.NumNodes to 0,
+            //   we can split nodes into 2 sets containing continuous nodeIds:
+            //   1. nodes already upgraded (either left or right section dependent on Upgrade direction)
+            //   2. nodes to upgrade (either left or right section dependent on Upgrade direction)
+            var smallestNodeIdUnderUpgrade = cluster.DomainUnderUpgrade * ClusterManager.NumNodesPerUD;
+            var largestNodeIdUnderUpgrade  = smallestNodeIdUnderUpgrade + ClusterManager.NumNodesPerUD - 1;
+            var startNodeIdUpgraded = isPreferenceForLowerUD ?
+                0 : largestNodeIdUnderUpgrade + 1;
+            var endNodeIdUpgraded = isPreferenceForLowerUD ?
+                smallestNodeIdUnderUpgrade - 1 : cluster.NumNodes - 1;
+            var startNodeIdToUpgrade = isPreferenceForLowerUD ?
+                largestNodeIdUnderUpgrade + 1 : 0;
+            var endNodeIdToUpgrade = isPreferenceForLowerUD ?
+                cluster.NumNodes - 1 : smallestNodeIdUnderUpgrade - 1;
+
+            // Find the best score for the nodes already upgraded.
+            var newOptimalScoreDueToPreference = double.MaxValue;
+            for (var nodeId = startNodeIdUpgraded; nodeId < endNodeIdUpgraded; nodeId++)
+            {
+                if (nodeIdToScore[nodeId] < newOptimalScoreDueToPreference)
+                {
+                    newOptimalScoreDueToPreference = nodeIdToScore[nodeId];
+                }
+            }
+
+            // If there is at least a single node that's already upgraded on which we can place,
+            //   we overwrite all of the scores for nodes to upgrade
+            if (newOptimalScoreDueToPreference != double.MaxValue)
+            {
+                for (var nodeId = startNodeIdToUpgrade; nodeId < endNodeIdToUpgrade; nodeId++)
+                {
+                    nodeIdToScore[nodeId] = double.MaxValue;
+                }
+            }
         }
 
         private int FindNodeToMoveToAfterClearingSpace(
