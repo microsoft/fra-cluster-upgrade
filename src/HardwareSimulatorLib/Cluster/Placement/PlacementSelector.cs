@@ -207,7 +207,8 @@ namespace HardwareSimulatorLib.Cluster.Placement
                 replicaDiskUsage, srcNodeId, out double[] nodeIdToScore,
                 out double optimalScore);
 
-            if (UpgradeScheduler.IsUpgrading)
+            if (UpgradeScheduler.IsUpgrading &&
+                (cluster.IsPrimaryReplica(replicaId) || cluster.IsStandardReplica(replicaId)))
             {
                 UpdateScoresBasedOnUDPreferences(nodeIdToScore, ref optimalScore);
             }
@@ -262,6 +263,7 @@ namespace HardwareSimulatorLib.Cluster.Placement
             //   we overwrite all of the scores for nodes to upgrade
             if (newOptimalScoreDueToPreference != double.MaxValue)
             {
+                optimalScore = newOptimalScoreDueToPreference;
                 for (var nodeId = startNodeIdToUpgrade; nodeId < endNodeIdToUpgrade; nodeId++)
                 {
                     nodeIdToScore[nodeId] = double.MaxValue;
