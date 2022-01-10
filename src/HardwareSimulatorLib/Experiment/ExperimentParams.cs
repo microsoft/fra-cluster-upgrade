@@ -13,6 +13,8 @@ namespace HardwareSimulatorLib.Experiment
         public double NodeDiskSizeInMB;
         public double NodeMemorySizeInMB;
         public double OverbookingRatio;
+        public double NodeMemUsageLimitForPlacement;
+        public double NodeDiskUsageLimitForPlacement;
 
         public int NumNodes;
         public string HardwareGeneration;

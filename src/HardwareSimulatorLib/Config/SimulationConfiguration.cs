@@ -40,6 +40,8 @@ namespace HardwareSimulatorLib.Config
                    SearchSpace.DiskSizesInGB.Length *
                    SearchSpace.MemorySizesInGB.Length *
                    SearchSpace.OverbookingRatios.Length *
+                   SearchSpace.NodeMemMaxUsageRatiosForPlacement.Length * 
+                   SearchSpace.NodeDiskMaxUsageRatiosForPlacement.Length * 
                    PlacementAlgorithm.PlacementHeuristic.Length;
         }
 
@@ -50,7 +52,9 @@ namespace HardwareSimulatorLib.Config
                    SearchSpace.VCoresPerNode.Length *
                    SearchSpace.DiskSizesInGB.Length *
                    SearchSpace.MemorySizesInGB.Length *
-                   SearchSpace.OverbookingRatios.Length;
+                   SearchSpace.OverbookingRatios.Length *
+                   SearchSpace.NodeMemMaxUsageRatiosForPlacement.Length * 
+                   SearchSpace.NodeDiskMaxUsageRatiosForPlacement.Length;
         }
 
         public IEnumerable<ExperimentParams> GetAllExperimentsParams()
@@ -63,6 +67,8 @@ namespace HardwareSimulatorLib.Config
             foreach (var memorySizeInGB in SearchSpace.MemorySizesInGB)
             foreach (var diskSizeInGB in SearchSpace.DiskSizesInGB)
             foreach (var overbookingRatio in SearchSpace.OverbookingRatios)
+            foreach (var nodeMemMaxUsageRatioForPlacement in SearchSpace.NodeMemMaxUsageRatiosForPlacement)
+            foreach (var nodeDiskMaxUsageRatioForPlacement in SearchSpace.NodeDiskMaxUsageRatiosForPlacement)
             /* We fix values over the search space then loop over the set of
              * possible experiments based on the 'PlacementAlgorithm' */
             {
@@ -89,6 +95,12 @@ namespace HardwareSimulatorLib.Config
                             ClusterConfiguration.MemoryOverheadPerNodeInGB),
                         NodeDiskSizeInMB   = 1024 * (diskSizeInGB -
                             ClusterConfiguration.DiskOverheadPerNodeInGB),
+                        NodeMemUsageLimitForPlacement = 1024 * (memorySizeInGB -
+                            ClusterConfiguration.MemoryOverheadPerNodeInGB) * 
+                            nodeMemMaxUsageRatioForPlacement,
+                        NodeDiskUsageLimitForPlacement = 1024 * (diskSizeInGB -
+                            ClusterConfiguration.DiskOverheadPerNodeInGB) *
+                            nodeDiskMaxUsageRatioForPlacement,
 
                         // Second, set base experiment params.
                         NumNodes = ClusterConfiguration.Nodes,

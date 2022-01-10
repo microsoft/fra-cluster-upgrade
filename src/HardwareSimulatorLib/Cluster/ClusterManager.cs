@@ -23,6 +23,8 @@ namespace HardwareSimulatorLib.Cluster
         public double NodeNumCores;
         public double NodeMemorySizeInMB;
         public double NodeDiskSizeInMB;
+        public double NodeMemUsageLimitForPlacement;
+        public double NodeDiskUsageLimitForPlacement;
 
         // nodes IDs are 0 to NumNodes - 1
         public readonly int NumNodes;
@@ -90,6 +92,8 @@ namespace HardwareSimulatorLib.Cluster
             NodeNumCores = Params.NodeNumCores;
             NodeMemorySizeInMB = Params.NodeMemorySizeInMB;
             NodeDiskSizeInMB = Params.NodeDiskSizeInMB;
+            NodeMemUsageLimitForPlacement = Params.NodeMemUsageLimitForPlacement;
+            NodeDiskUsageLimitForPlacement = Params.NodeDiskUsageLimitForPlacement;
 
             NodeIdToCurrCpuUsage = new double[NumNodes];
             NodeIdToCurrDiskUsage = new double[NumNodes];
