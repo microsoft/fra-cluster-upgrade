@@ -19,6 +19,7 @@ namespace HardwareSimulatorLib.Slo.Reader
         public const string AvailableVmSizesElementName = "AvailableVmSizes";
         public const string FabricLoadMetricElementName = "FabricLoadMetric";
         public const string FabricLoadMetricsElementName = "FabricLoadMetrics";
+        public const string EditionElementName = "Edition";
         #endregion
 
         public static List<ApplicationConfiguration>
@@ -49,9 +50,16 @@ namespace HardwareSimulatorLib.Slo.Reader
                 vmSizes.Add((string)elem.Attribute(NameAttributeName));
             }
 
+            string edition = (string)el.Element(EditionElementName);
+            bool isPremium = false;
+            if(edition != null && edition.CompareTo("Premium") == 0)
+            {
+                isPremium = true;
+            }
+
             var config = ProcessFabricLoadMetricsElement(
                 el.Element(FabricLoadMetricsElementName));
-            return new ApplicationConfiguration(type, size, config, vmSizes);
+            return new ApplicationConfiguration(type, size, config, vmSizes, isPremium);
         }
 
         private static PlacementConfiguration ProcessFabricLoadMetricsElement(

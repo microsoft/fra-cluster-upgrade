@@ -65,7 +65,7 @@ namespace HardwareSimulatorLib.Cluster.Placement
             this.rand = rand;
         }
 
-        protected abstract void ComputeNodeScores(string replicaId,
+        protected abstract void CompteNodeScores(string replicaId,
             double[] nodeIdToCpuUsage, double[] nodeIdToMemoryUsage,
             double[] nodeIdToDiskUsage, double replicaCpuUsage,
             double replicaMemoryUsage, double replicaDiskUsage, int srcNodeId,
@@ -202,7 +202,7 @@ namespace HardwareSimulatorLib.Cluster.Placement
             double replicaMemoryUsage, double replicaDiskUsage,
             int srcNodeId = -1)
         {
-            ComputeNodeScores(replicaId, nodeIdToCpuUsage, nodeIdToMemoryUsage,
+            CompteNodeScores(replicaId, nodeIdToCpuUsage, nodeIdToMemoryUsage,
                 nodeIdToDiskUsage, replicaCpuUsage, replicaMemoryUsage,
                 replicaDiskUsage, srcNodeId, out double[] nodeIdToScore,
                 out double optimalScore);

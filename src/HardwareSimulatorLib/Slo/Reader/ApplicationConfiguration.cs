@@ -18,13 +18,16 @@ namespace HardwareSimulatorLib.Slo.Reader
         public PlacementConfiguration PlacementConfiguration { get; private set; }
         #endregion
 
+        public bool IsPremium { get; set; }
+
         public ApplicationConfiguration(string type, string size,
-            PlacementConfiguration configuration, HashSet<string> vmSizes)
+            PlacementConfiguration configuration, HashSet<string> vmSizes, bool isPremium)
         {
             Type = type;
             Size = size;
             PlacementConfiguration = configuration;
             VMSizes = vmSizes;
+            IsPremium = isPremium;
         }
 
         public double GetMaxCpuUsage(string hardware)

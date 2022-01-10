@@ -86,6 +86,13 @@ namespace HardwareSimulatorLib.Trace
                 throw new Exception("SloToProb.Count != " +
                     "SloToStandardTenantIds.Count + SloToPremiumTenantIds.Count"); */
 
+            int missingPremSlos = 0;
+            int misingStdSlos = 0;
+            double originalStdTotalWeight = 0.0;
+            double originalPremTotalWeight = 0.0;
+            double filteredStdTotalWeight = 0.0;
+            double filteredPremTotalWeight = 0.0;
+
             var unallowedSlo = new List<string>();
             foreach (var slo in SloToProb.Keys)
             {
@@ -94,17 +101,33 @@ namespace HardwareSimulatorLib.Trace
                     unallowedSlo.Add(slo);
                     continue;
                 }
-
                 var dist = SloToProb[slo];
                 if (SloToPremiumTenantIds.ContainsKey(slo))
                 {
                     PremSlos.Add(slo);
                     PremSloCdf.Add(dist);
+                    filteredPremTotalWeight += dist;
+                    originalPremTotalWeight += dist;
                 }
                 else if (SloToStandardTenantIds.ContainsKey(slo))
                 {
                     StdSlos.Add(slo);
                     StdSloCdf.Add(dist);
+                    filteredStdTotalWeight += dist;
+                    originalStdTotalWeight += dist;
+                }
+                else
+                {
+                    if(SloSpecification.SloIdToSpecificationMap[slo].IsPremium)
+                    {
+                        missingPremSlos++;
+                        originalPremTotalWeight += dist;
+                    }
+                    else
+                    {
+                        misingStdSlos++;
+                        originalStdTotalWeight += dist;
+                    }
                 }
             }
 
@@ -113,6 +136,13 @@ namespace HardwareSimulatorLib.Trace
             PremSloCdf[0] += StdSloCdf[StdSloCdf.Count - 1];
             for (var i = 1; i < PremSloCdf.Count; i++)
                 PremSloCdf[i] += PremSloCdf[i - 1];
+
+            Console.WriteLine("Missed premium SLOs: " + missingPremSlos);
+            Console.WriteLine("Missed standard SLOs: " + misingStdSlos);
+            Console.WriteLine("Original premium SLO total weight: " + originalPremTotalWeight);
+            Console.WriteLine("Original standard SLO total weight: " + originalStdTotalWeight);
+            Console.WriteLine("Actual premium SLO total weight: " + filteredPremTotalWeight);
+            Console.WriteLine("Actual standard SLO total weight: " + filteredStdTotalWeight);
         }
 
         private void FilterTraceFile(string traceFilename)
@@ -242,6 +272,14 @@ namespace HardwareSimulatorLib.Trace
             var premTenantsToFix = new Dictionary<string, List<string>>();
 
             var filteredTenantIdToReplicaIds = new Dictionary<string, List<string>>();
+
+            // Each multi-replica application (tenant) is abstracted as (#replicas, primary trace, secondary trace)
+            // #replicas: is the number of distinct replicas of an app observed at any specific time point (assuming constant)
+            // Primary trace: is the replica trace with the highest average resoruce usage
+            //                among a set of replica traces. If the set of replica traces of an app changes due to failovers, then
+            //                the primary trace is the concatenation of the priamry trace of each distinct set of replica traces.
+            // Secondary trace: is any of the replica traces whose average resource usage is not the highest.
+            //
             foreach (var tenantId in TenantIdToReplicaIds.Keys)
             {
                 if (TenantIdToReplicaIds[tenantId].Count == 1)
