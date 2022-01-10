@@ -10,7 +10,7 @@ namespace HardwareSimulatorLib.Cluster.Placement.Impl
             base(cluster, experimentParams, rand)
         { }
 
-        protected override void CompteNodeScores(string replicaId,
+        protected override void ComputeNodeScores(string replicaId,
             double[] nodeIdToCpuUsage, double[] nodeIdToMemoryUsage,
             double[] nodeIdToDiskUsage, double replicaCpuUsage,
             double replicaMemoryUsage, double replicaDiskUsage,
