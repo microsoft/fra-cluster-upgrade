@@ -16,12 +16,6 @@ namespace HardwareSimulatorLib.Cluster.Upgrade
         protected bool isNextUpgradeLowerToHigherUDs;
         protected int numberFailedUdUpgrades;
 
-        public static Dictionary<string, int> premUpgradeMoveCount = new Dictionary<string, int>();
-        public static Dictionary<string, int> stdUpgradeMoveCount = new Dictionary<string, int>();
-        public static Dictionary<string, int> secUpgradeMoveCount = new Dictionary<string, int>();
-        public static Dictionary<string, int> premRegularMovesCount = new Dictionary<string, int>();
-        public static Dictionary<string, int> stdRegularMoveCount = new Dictionary<string, int>();
-        public static Dictionary<string, int> secRegularMoveCount = new Dictionary<string, int>();
         public static bool IsUpgrading = false;
 
         protected int[] numReplicasInDomainUnderUpgrade = new int[] { -1, -1, -1, -1 };
@@ -34,16 +28,6 @@ namespace HardwareSimulatorLib.Cluster.Upgrade
             (24 + 376) /* hrs */, 0 /* mins */, 0 /* secs */);
         public static TimeSpan UpgradeLength = new TimeSpan(
                     4 /* hrs */, 0 /* mins */, 0 /* secs */);
-
-        public static void InitializeDataDistributionCounters()
-        {
-            premUpgradeMoveCount.Clear();
-            stdUpgradeMoveCount.Clear();
-            secUpgradeMoveCount.Clear();
-            premRegularMovesCount.Clear();
-            stdRegularMoveCount.Clear();
-            secRegularMoveCount.Clear();
-        }
 
         public static UpgradeScheduler Make(ExperimentParams Params,
                 ClusterManager cluster)

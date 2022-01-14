@@ -121,9 +121,6 @@ namespace HardwareSimulatorLib.Experiment
                             (NumMemViolations + NumDiskViolations) + "," +
                             cluster.NumMoves;
                         NumMemViolations = NumDiskViolations = cluster.NumMoves = 0;
-
-                        LogRegularMovesDataDistribution("pre-");
-                        UpgradeScheduler.InitializeDataDistributionCounters();
                     }
                     // Log here.
 
@@ -140,9 +137,6 @@ namespace HardwareSimulatorLib.Experiment
                             cluster.upgradeScheduler.NumMoves;
                         NumMemViolations = NumDiskViolations =
                             cluster.NumMoves = cluster.NumSwaps = 0;
-                        var data = LogUpgradeMovesDataDistribution();
-                        LogRegularMovesDataDistribution("up-", data);
-                        UpgradeScheduler.InitializeDataDistributionCounters();
                     }
                 }
 
@@ -155,8 +149,6 @@ namespace HardwareSimulatorLib.Experiment
                             (NumMemViolations + NumDiskViolations) + "," + cluster.NumMoves;
                     Log = preupgradelog + "," +
                         postupgradelog + "," + upgradelog;
-
-                    LogRegularMovesDataDistribution("post-");
                 }
 
                 if (timeElapsed != TimeSpan.Zero)
@@ -235,235 +227,6 @@ namespace HardwareSimulatorLib.Experiment
                     }
                 }
             }
-        }
-
-        private void LogRegularMovesDataDistribution(string prefix,
-            Dictionary<string, int> numTenantMovesToCountFromUpgrades = null)
-        {
-            var dir = Params.outputDirectory + $"\\regular_moves\\";
-            if (!Directory.Exists(dir))
-                Directory.CreateDirectory(dir);
-
-            var numTenantMovesToCount = new Dictionary<string, int>();
-
-            var numMovesToCount = new Dictionary<int, int>();
-            using (var sw = new StreamWriter(dir + $"{prefix}StdRegularMoves_{runIdx}.txt", true))
-            {
-                foreach (var replicaId in UpgradeScheduler.stdRegularMoveCount.Keys)
-                {
-                    var tenantId = ReplicaInfo.ExtractTenantIdWithTrace(replicaId);
-                    if (!numTenantMovesToCount.ContainsKey(tenantId))
-                        numTenantMovesToCount[tenantId] = 0;
-                    numTenantMovesToCount[tenantId] = numTenantMovesToCount[tenantId] + 1;
-
-                    var moves = UpgradeScheduler.stdRegularMoveCount[replicaId];
-                    if (!numMovesToCount.ContainsKey(moves))
-                        numMovesToCount[moves] = 0;
-                    numMovesToCount[moves]++;
-                    sw.WriteLine(replicaId + "," + moves);
-                }
-            }
-            using (var sw = new StreamWriter(dir + $"{prefix}StdRegularMovesAgg_{runIdx}.txt", true))
-            {
-                foreach (var numMoves in numMovesToCount.Keys)
-                    sw.WriteLine(numMoves + "," + numMovesToCount[numMoves]);
-            }
-
-            numMovesToCount = new Dictionary<int, int>();
-            using (var sw = new StreamWriter(dir + $"{prefix}PremRegularMoves_{runIdx}.txt", true))
-            {
-                foreach (var replicaId in UpgradeScheduler.premRegularMovesCount.Keys)
-                {
-                    var tenantId = ReplicaInfo.ExtractTenantIdWithTrace(replicaId);
-                    if (!numTenantMovesToCount.ContainsKey(tenantId))
-                        numTenantMovesToCount[tenantId] = 0;
-                    numTenantMovesToCount[tenantId]++;
-
-                    var moves = UpgradeScheduler.premRegularMovesCount[replicaId];
-                    if (!numMovesToCount.ContainsKey(moves))
-                        numMovesToCount[moves] = 0;
-                    numMovesToCount[moves]++;
-                    sw.WriteLine(replicaId + "," + moves);
-                }
-            }
-            using (var sw = new StreamWriter(dir + $"{prefix}PremRegularMovesAgg_{runIdx}.txt", true))
-            {
-                foreach (var numMoves in numMovesToCount.Keys)
-                    sw.WriteLine(numMoves + "," + numMovesToCount[numMoves]);
-            }
-
-            numMovesToCount = new Dictionary<int, int>();
-            using (var sw = new StreamWriter(dir + $"{prefix}SecRegularMoves_{runIdx}.txt", true))
-            {
-                foreach (var replicaId in UpgradeScheduler.secRegularMoveCount.Keys)
-                {
-                    var tenantId = ReplicaInfo.ExtractTenantIdWithTrace(replicaId);
-                    if (!numTenantMovesToCount.ContainsKey(tenantId))
-                        numTenantMovesToCount[tenantId] = 0;
-                    numTenantMovesToCount[tenantId]++;
-
-                    var moves = UpgradeScheduler.secRegularMoveCount[replicaId];
-                    if (!numMovesToCount.ContainsKey(moves))
-                        numMovesToCount[moves] = 0;
-                    numMovesToCount[moves]++;
-                    sw.WriteLine(replicaId + "," + moves);
-                }
-            }
-            using (var sw = new StreamWriter(dir + $"{prefix}SecRegularMovesAgg_{runIdx}.txt", true))
-            {
-                foreach (var numMoves in numMovesToCount.Keys)
-                    sw.WriteLine(numMoves + "," + numMovesToCount[numMoves]);
-            }
-
-            numMovesToCount = new Dictionary<int, int>();
-            using (var sw = new StreamWriter(dir + $"{prefix}TenantRegularMoves_{runIdx}.txt", true))
-            {
-                foreach (var tenant in numTenantMovesToCount.Keys)
-                {
-                    var moves = numTenantMovesToCount[tenant];
-
-                    if (!numMovesToCount.ContainsKey(moves))
-                        numMovesToCount[moves] = 0;
-                    numMovesToCount[moves]++;
-
-                    sw.WriteLine(tenant + "," + moves);
-                }
-            }
-            using (var sw = new StreamWriter(dir + $"{prefix}TenantRegularMovesAgg_{runIdx}.txt", true))
-            {
-                foreach (var numMoves in numMovesToCount.Keys)
-                    sw.WriteLine(numMoves + "," + numMovesToCount[numMoves]);
-            }
-
-            if (numTenantMovesToCountFromUpgrades != null)
-            {
-                foreach (var tenant in numTenantMovesToCountFromUpgrades.Keys)
-                {
-                    if (!numTenantMovesToCount.ContainsKey(tenant))
-                        numTenantMovesToCount[tenant] = numTenantMovesToCountFromUpgrades[tenant];
-                    else
-                        numTenantMovesToCount[tenant] += numTenantMovesToCountFromUpgrades[tenant];
-                }
-                numMovesToCount = new Dictionary<int, int>();
-                using (var sw = new StreamWriter(dir + $"{prefix}TenantMoves_{runIdx}.txt", true))
-                {
-                    foreach (var tenant in numTenantMovesToCount.Keys)
-                    {
-                        var moves = numTenantMovesToCount[tenant];
-
-                        if (!numMovesToCount.ContainsKey(moves))
-                            numMovesToCount[moves] = 0;
-                        numMovesToCount[moves]++;
-
-                        sw.WriteLine(tenant + "," + moves);
-                    }
-                }
-                using (var sw = new StreamWriter(dir + $"{prefix}TenantMovesAgg_{runIdx}.txt", true))
-                {
-                    foreach (var numMoves in numMovesToCount.Keys)
-                        sw.WriteLine(numMoves + "," + numMovesToCount[numMoves]);
-                }
-            }
-        }
-
-        private Dictionary<string, int> LogUpgradeMovesDataDistribution()
-        {
-            var dir = Params.outputDirectory + $"\\upgrade_moves\\";
-            if (!Directory.Exists(dir))
-                Directory.CreateDirectory(dir);
-
-            var numTenantMovesToCount = new Dictionary<string, int>();
-
-            var numMovesToCount = new Dictionary<int, int>();
-            using (var sw = new StreamWriter(dir + $"StdUpgradeMoves_{runIdx}.txt", true))
-            {
-                foreach (var replicaId in UpgradeScheduler.stdUpgradeMoveCount.Keys)
-                {
-                    var tenantId = ReplicaInfo.ExtractTenantIdWithTrace(replicaId);
-                    if (!numTenantMovesToCount.ContainsKey(tenantId))
-                        numTenantMovesToCount[tenantId] = 0;
-                    numTenantMovesToCount[tenantId]++;
-
-                    var moves = UpgradeScheduler.stdUpgradeMoveCount[replicaId];
-                    if (!numMovesToCount.ContainsKey(moves))
-                        numMovesToCount[moves] = 0;
-                    numMovesToCount[moves]++;
-                    sw.WriteLine(replicaId + "," + moves);
-                }
-            }
-            using (var sw = new StreamWriter(dir + $"StdUpgradeMovesAgg_{runIdx}.txt", true))
-            {
-                foreach (var numMoves in numMovesToCount.Keys)
-                    sw.WriteLine(numMoves + "," + numMovesToCount[numMoves]);
-            }
-
-            numMovesToCount = new Dictionary<int, int>();
-            using (var sw = new StreamWriter(dir + $"PremUpgradeMoves_{runIdx}.txt", true))
-            {
-                foreach (var replicaId in UpgradeScheduler.premUpgradeMoveCount.Keys)
-                {
-                    var tenantId = ReplicaInfo.ExtractTenantIdWithTrace(replicaId);
-                    if (!numTenantMovesToCount.ContainsKey(tenantId))
-                        numTenantMovesToCount[tenantId] = 0;
-                    numTenantMovesToCount[tenantId]++;
-
-                    var moves = UpgradeScheduler.premUpgradeMoveCount[replicaId];
-                    if (!numMovesToCount.ContainsKey(moves))
-                        numMovesToCount[moves] = 0;
-                    numMovesToCount[moves]++;
-                    sw.WriteLine(replicaId + "," + moves);
-                }
-            }
-            using (var sw = new StreamWriter(dir + $"PremUpgradeMovesAgg_{runIdx}.txt", true))
-            {
-                foreach (var numMoves in numMovesToCount.Keys)
-                    sw.WriteLine(numMoves + "," + numMovesToCount[numMoves]);
-            }
-
-            numMovesToCount = new Dictionary<int, int>();
-            using (var sw = new StreamWriter(dir + $"SecUpgradeMoves_{runIdx}.txt", true))
-            {
-                foreach (var replicaId in UpgradeScheduler.secUpgradeMoveCount.Keys)
-                {
-                    var tenantId = ReplicaInfo.ExtractTenantIdWithTrace(replicaId);
-                    if (!numTenantMovesToCount.ContainsKey(tenantId))
-                        numTenantMovesToCount[tenantId] = 0;
-                    numTenantMovesToCount[tenantId]++;
-
-                    var moves = UpgradeScheduler.secUpgradeMoveCount[replicaId];
-                    if (!numMovesToCount.ContainsKey(moves))
-                        numMovesToCount[moves] = 0;
-                    numMovesToCount[moves]++;
-                    sw.WriteLine(replicaId + "," + moves);
-                }
-            }
-            using (var sw = new StreamWriter(dir + $"SecUpgradeMovesAgg_{runIdx}.txt", true))
-            {
-                foreach (var numMoves in numMovesToCount.Keys)
-                    sw.WriteLine(numMoves + "," + numMovesToCount[numMoves]);
-            }
-
-            numMovesToCount = new Dictionary<int, int>();
-            using (var sw = new StreamWriter(dir + $"TenantUpgradeMoves_{runIdx}.txt", true))
-            {
-                foreach (var tenant in numTenantMovesToCount.Keys)
-                {
-                    var moves = numTenantMovesToCount[tenant];
-
-                    if (!numMovesToCount.ContainsKey(moves))
-                        numMovesToCount[moves] = 0;
-                    numMovesToCount[moves]++;
-
-                    sw.WriteLine(tenant + "," + moves);
-                }
-            }
-            using (var sw = new StreamWriter(dir + $"TenantUpgradeMovesAgg_{runIdx}.txt", true))
-            {
-                foreach (var numMoves in numMovesToCount.Keys)
-                    sw.WriteLine(numMoves + "," + numMovesToCount[numMoves]);
-            }
-
-            return numTenantMovesToCount;
         }
     }
 }

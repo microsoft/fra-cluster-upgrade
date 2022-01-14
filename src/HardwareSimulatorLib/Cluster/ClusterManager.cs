@@ -619,26 +619,6 @@ namespace HardwareSimulatorLib.Cluster
             if (!forPlacement && !forSwap) NumMoves++;
             else if (forPlacement) NumMovesForPlacement++;
 
-            if (!forSwap)
-            {
-                var countMap = UpgradeScheduler.IsUpgrading ?
-                    // upgrade moves to count.
-                        (IsPrimaryReplica(replicaId) ?
-                        UpgradeScheduler.premUpgradeMoveCount :
-                        (IsStandardReplica(replicaId) ?
-                            UpgradeScheduler.stdUpgradeMoveCount :
-                            UpgradeScheduler.secUpgradeMoveCount)) :
-                    // regular moves to count.
-                        (IsPrimaryReplica(replicaId) ?
-                        UpgradeScheduler.premRegularMovesCount :
-                        (IsStandardReplica(replicaId) ?
-                            UpgradeScheduler.stdRegularMoveCount :
-                            UpgradeScheduler.secRegularMoveCount));
-                if (!countMap.ContainsKey(replicaId))
-                    countMap[replicaId] = 0;
-                countMap[replicaId]++;
-            }
-
             var trace = traceMan.ReplicaIdToTraceMap[
                 ReplicaInfo.ExtractReplicaId(replicaId)];
             var usage = trace.GetResourceUsage(
