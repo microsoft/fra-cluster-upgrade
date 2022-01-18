@@ -11,8 +11,8 @@
     public class UpgradeAlgo
     {
         public string Heuristic;
-        public int IntervalInHours;
-        public bool ApplyPlacementPreference;
+        public int IntervalBetweenUpgradesInHours;
+        public int TimeToUpgradeSingleNodeInHours;
 
         public static UpgradeHeuristicEnum GetUpgradeHeuristicAsEnum(
             string PlacementHeuristic)

@@ -4,7 +4,7 @@ using System;
 
 namespace HardwareSimulatorLib.Cluster.Placement.Impl
 {
-    class WorstFitUpgradeSelector : PlacementSelector
+    class WorstFitUpgradeSelector : WorstFitSelector
     {
         public WorstFitUpgradeSelector(ClusterManager clusterManager,
             ExperimentParams experimentParams, Random rand) :
@@ -51,7 +51,7 @@ namespace HardwareSimulatorLib.Cluster.Placement.Impl
 
                 // Add extra update move as a weighted sum.
                 if (cluster.IsStandardReplica(replicaId) &&
-                        nodeId < ClusterManager.NumNodesPerUD)
+                    cluster.upgradeState.IsInInitialUD(nodeId))
                 {
                     nodeIdToScore[nodeId]++;
                 }
@@ -63,7 +63,10 @@ namespace HardwareSimulatorLib.Cluster.Placement.Impl
                     {
                         if (replica == replicaId) continue;
                         if (cluster.ReplicaIdToPlacementNodeIdMap.ContainsKey(replica) &&
-                                cluster.ReplicaIdToPlacementNodeIdMap[replica] < nodeId)
+                            ((cluster.upgradeState.IsUpgradeLowerToHigherUDs &&
+                                cluster.ReplicaIdToPlacementNodeIdMap[replica] < nodeId) ||
+                             (!cluster.upgradeState.IsUpgradeLowerToHigherUDs &&
+                                cluster.ReplicaIdToPlacementNodeIdMap[replica] > nodeId)))
                         {
                             isReplicaLowestUD = false;
                             break;

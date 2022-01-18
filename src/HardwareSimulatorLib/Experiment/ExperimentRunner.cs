@@ -4,7 +4,7 @@ using System.IO;
 using HardwareSimulatorLib.Predictor;
 using HardwareSimulatorLib.Trace;
 using HardwareSimulatorLib.Cluster;
-using HardwareSimulatorLib.Cluster.Upgrade;
+using HardwareSimulatorLib.Cluster.Placement;
 
 namespace HardwareSimulatorLib.Experiment
 {
@@ -24,11 +24,9 @@ namespace HardwareSimulatorLib.Experiment
         public int NumMemViolations;
         public int NumDiskViolations;
 
-        private string preupgradelog;
-        private string upgradelog;
-        private string postupgradelog;
-        public string Log;
-        private int runIdx;
+        private string[] Preupgradelogs;
+        private string[] Upgradelogs;
+        public string LogFailovers;
 
         public ExperimentRunner(TimeSpan simDuration, ExperimentParams Params,
             TraceManager traceMan, ViolationPredictor predictor, int runIdx)
@@ -36,14 +34,15 @@ namespace HardwareSimulatorLib.Experiment
             this.simDuration = simDuration;
             this.Params = Params;
             this.statistics = new ExperimentStatistics();
-            this.runIdx = runIdx;
 
-            cluster = new ClusterManager(traceMan, Params, statistics,
-                new Random(runIdx), predictor);
+            cluster = new ClusterManager(traceMan, simDuration, Params,
+                statistics, new Random(runIdx), predictor);
+
+            var NumUpgradesPlanned = cluster.upgradeState.
+                GetNumUpgradesPlanned();
+            Preupgradelogs = new string[NumUpgradesPlanned];
+            Upgradelogs = new string[NumUpgradesPlanned];
         }
-
-        public static int MapToNumSimIntervals(TimeSpan time)
-            => Convert.ToInt32(time.TotalMinutes / NumMinutesPerSimInterval);
 
         public IEnumerable<ExperimentStatistics> RunExperiment()
         {
@@ -56,9 +55,10 @@ namespace HardwareSimulatorLib.Experiment
                      timeElapsed <= simDuration;
                      timeElapsed += SimulationIntervalLength)
             {
-                if (timeElapsed.TotalMinutes % 600 == 0)
-                    Console.WriteLine("\t" + timeElapsed.TotalMinutes / 60 +
-                        " hours");
+                if (timeElapsed.TotalHours % 10 == 0)
+                    Console.WriteLine("\t" + timeElapsed.TotalHours + " hrs");
+
+                HandleUpgradesIfAny(timeElapsed);
 
                 cluster.EvictTenantsIfLifetimeElapsed(timeElapsed);
                 cluster.UpdateResourceUsageWithNewReports(timeElapsed);
@@ -111,49 +111,66 @@ namespace HardwareSimulatorLib.Experiment
                 LogViolations(timeElapsed, Params.outputDirectory +
                     @"NotFixed-Violations.txt");
 
-                if (cluster.IsTimeToUpgrade(timeElapsed))
-                {
-                    if (timeElapsed == UpgradeScheduler.UpgradeStartTime)
-                    {
-                        preupgradelog =
-                            NumMemViolations + "," +
-                            NumDiskViolations + "," +
-                            (NumMemViolations + NumDiskViolations) + "," +
-                            cluster.NumMoves;
-                        NumMemViolations = NumDiskViolations = cluster.NumMoves = 0;
-                    }
-                    // Log here.
-
-                    cluster.Upgrade(timeElapsed);
-
-                    if (timeElapsed == UpgradeScheduler.UpgradeEndTime)
-                    {
-                        upgradelog =
-                            NumMemViolations + "," +
-                            NumDiskViolations + "," +
-                            (NumMemViolations + NumDiskViolations) + "," +
-                            cluster.NumMoves + "," +
-                            cluster.NumSwaps + "," +
-                            cluster.upgradeScheduler.NumMoves;
-                        NumMemViolations = NumDiskViolations =
-                            cluster.NumMoves = cluster.NumSwaps = 0;
-                    }
-                }
-
                 if (timeElapsed == simDuration)
                 {
-                    postupgradelog =
-                        NumMemViolations + "," +
-                        NumDiskViolations + "," +
-
-                            (NumMemViolations + NumDiskViolations) + "," + cluster.NumMoves;
-                    Log = preupgradelog + "," +
-                        postupgradelog + "," + upgradelog;
+                    LogFailovers = ConcatAndGetLog();
                 }
 
                 if (timeElapsed != TimeSpan.Zero)
                     yield return statistics;
             }
+        }
+
+        private void HandleUpgradesIfAny(TimeSpan timeElapsed)
+        {
+            // Check for the start of upgrading a domain 
+            if (cluster.upgradeState
+                       .IsTimeToStartDomainUpgrade(timeElapsed))
+            {
+                var upgradeIdx = cluster.upgradeState.nextIdx;
+                if (timeElapsed == cluster.upgradeState
+                                          .UpgradeStartElapsedTime[upgradeIdx])
+                {
+                    cluster.PlacementPreference = cluster
+                        .upgradeState.GetPlacementPreference();
+                    var numViolations = NumMemViolations + NumDiskViolations;
+                    Preupgradelogs[upgradeIdx] = NumMemViolations + "," +
+                        NumDiskViolations + "," + numViolations + "," +
+                        cluster.NumMoves + "," + cluster.NumMovesToEnablePlacement;
+                    NumMemViolations = NumDiskViolations =
+                        cluster.NumMoves = cluster.NumSwaps = 0;
+                }
+
+                cluster.Upgrade(timeElapsed);
+            }
+
+            if (cluster.upgradeState
+                       .IsTimeToEndUpgrade(timeElapsed))
+            {
+                cluster.PlacementPreference = PlacementPreference.None;
+                var numViolations = NumMemViolations + NumDiskViolations;
+                var upgradeIdx = cluster.upgradeState.nextIdx;
+                Upgradelogs[upgradeIdx] = NumMemViolations + "," +
+                    NumDiskViolations + "," + numViolations + "," +
+                    cluster.NumMoves + "," + cluster.NumMovesToEnablePlacement +
+                    "," + cluster.NumSwaps + "," + cluster.upgradeExecutor.NumMoves;
+                NumMemViolations = NumDiskViolations =
+                    cluster.NumMoves = cluster.NumSwaps = 0;
+                cluster.upgradeState.nextIdx++;
+            }
+        }
+
+        private string ConcatAndGetLog()
+        {
+            var Log = "";
+            for (var i = 0; i < Upgradelogs.Length; i++)
+                Log += (Preupgradelogs[i] + "\n" + Upgradelogs[i] + "\n");
+
+            var numViolations = NumMemViolations + NumDiskViolations;
+            Log += (NumMemViolations + "," + NumDiskViolations + "," +
+                numViolations + "," + cluster.NumMoves + "," +
+                cluster.NumMovesToEnablePlacement);
+            return Log;
         }
 
         public void GetAndResetEssentialStatsAndLogViolations(

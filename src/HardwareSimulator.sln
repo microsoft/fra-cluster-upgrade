@@ -1,13 +1,15 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.31515.178
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31919.166
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServerlessAnalysis", "HardwareSimulator\ServerlessAnalysis.csproj", "{05BBBCF9-1949-4583-B24C-1C45D2443F4C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HardwareSimulatorLib", "HardwareSimulatorLib\HardwareSimulatorLib.csproj", "{17220D20-1C70-4C79-A9E4-1557296E9873}"
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "ScopeExe", "ScopeExe\ScopeExe.shproj", "{3601AD75-0A81-49E1-A191-2D45A048A52B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HardwareSimulatorLibTest", "HardwareSimulatorLibTest\HardwareSimulatorLibTest.csproj", "{C139F5CF-B3A5-4654-BE42-548AE325B0F3}"
 EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
@@ -38,6 +40,14 @@ Global
 		{17220D20-1C70-4C79-A9E4-1557296E9873}.Release|Any CPU.Build.0 = Release|Any CPU
 		{17220D20-1C70-4C79-A9E4-1557296E9873}.Release|x64.ActiveCfg = Release|Any CPU
 		{17220D20-1C70-4C79-A9E4-1557296E9873}.Release|x64.Build.0 = Release|Any CPU
+		{C139F5CF-B3A5-4654-BE42-548AE325B0F3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C139F5CF-B3A5-4654-BE42-548AE325B0F3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C139F5CF-B3A5-4654-BE42-548AE325B0F3}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{C139F5CF-B3A5-4654-BE42-548AE325B0F3}.Debug|x64.Build.0 = Debug|Any CPU
+		{C139F5CF-B3A5-4654-BE42-548AE325B0F3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C139F5CF-B3A5-4654-BE42-548AE325B0F3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C139F5CF-B3A5-4654-BE42-548AE325B0F3}.Release|x64.ActiveCfg = Release|Any CPU
+		{C139F5CF-B3A5-4654-BE42-548AE325B0F3}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

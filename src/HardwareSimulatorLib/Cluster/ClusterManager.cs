@@ -28,8 +28,8 @@ namespace HardwareSimulatorLib.Cluster
 
         // nodes IDs are 0 to NumNodes - 1
         public readonly int NumNodes;
-        public readonly int NumUDs;
         public readonly int NumFDs = 5;
+        public readonly int NumUDs;
         public static readonly int NumNodesPerUD = 4;
 
         public HashSet<string> ActiveTenants;
@@ -51,22 +51,22 @@ namespace HardwareSimulatorLib.Cluster
 
         private readonly PlacementSelector placementSelector;
         public PlacementPreference PlacementPreference;
-        public HashSet<int> NodeIdsUnderUpgrade;
-        public int DomainUnderUpgrade;
 
         private readonly ViolationPredictor predictor;
 
-        public readonly UpgradeScheduler upgradeScheduler;
+        public UpgradeScheduleAndState upgradeState;
+        public readonly UpgradeExecutor upgradeExecutor;
+        public bool considerUpgradesDuringPlacement;
 
         public readonly ExperimentStatistics statistics;
 
         public int NumSwaps;
-        public int NumMovesForPlacement;
+        public int NumMovesToEnablePlacement;
         public int NumMoves;
 
-        public ClusterManager(TraceManager traceMan, ExperimentParams Params,
-            ExperimentStatistics statistics, Random rand,
-            ViolationPredictor predictor)
+        public ClusterManager(TraceManager traceMan, TimeSpan simDuration,
+            ExperimentParams Params, ExperimentStatistics statistics,
+            Random rand, ViolationPredictor predictor)
         {
             this.sloSpec = new SloSpecification(Params.HardwareGeneration);
             this.traceMan = traceMan;
@@ -128,11 +128,14 @@ namespace HardwareSimulatorLib.Cluster
                 Params, rand, predictor);
             this.predictor = predictor;
 
-            // upgradeIntervalLength = TimeSpan.FromHours(
-                // Params.UpgradeIntervalInHours);
-            upgradeScheduler = UpgradeScheduler.Make(Params, this /*cluster*/);
+            upgradeState = new UpgradeScheduleAndState(
+                Params.WarmupInHours, Params.IntervalBetweenUpgradesInHours,
+                NumUDs, Params.TimeToUpgradeSingleNodeInHours, simDuration);
+            upgradeExecutor = UpgradeExecutor.Make(Params, this /*cluster*/);
             PlacementPreference = PlacementPreference.None;
-            NodeIdsUnderUpgrade = new HashSet<int>();
+
+            considerUpgradesDuringPlacement = Params.
+                ConsiderUpgradesDuringPlacement;
 
             this.statistics = statistics;
         }
@@ -188,8 +191,10 @@ namespace HardwareSimulatorLib.Cluster
             {
                 try
                 {
-                    PlaceReplica(timeElapsed, replicas[0]);
-                    PlaceReplica(timeElapsed, replicas[1]);
+                    PlaceReplica(timeElapsed, considerUpgradesDuringPlacement ?
+                                                replicas[1] : replicas[0]);
+                    PlaceReplica(timeElapsed, considerUpgradesDuringPlacement ?
+                                                replicas[0] : replicas[1]);
                     PlaceReplica(timeElapsed, replicas[2]);
                     PlaceReplica(timeElapsed, replicas[3]);
                 }
@@ -262,16 +267,6 @@ namespace HardwareSimulatorLib.Cluster
             return false;
         }
 
-        public void DenoteDomainToUpgrade(int UD)
-        {
-            DomainUnderUpgrade = UD;
-            var startNodeId = UD * NumNodesPerUD;
-            var endNodeId = (UD + 1) * NumNodesPerUD;
-            NodeIdsUnderUpgrade.Clear();
-            for (var nodeId = startNodeId; nodeId < endNodeId; nodeId++)
-                NodeIdsUnderUpgrade.Add(nodeId);
-        }
-
         public HashSet<int> GetExcludedNodesForConstraintsOnUDsAndFDsAndUpgrade(
             string replicaId)
         {
@@ -281,7 +276,7 @@ namespace HardwareSimulatorLib.Cluster
             var nodesToExclude = new HashSet<int>();
 
             // handle upgrade constraints.
-            foreach (var NodeIdUnderUpgrade in NodeIdsUnderUpgrade)
+            foreach (var NodeIdUnderUpgrade in upgradeState.NodeIdsUnderUpgrade)
                 nodesToExclude.Add(NodeIdUnderUpgrade);
 
             // handle UD and FD constraints for multi-replica tenants.
@@ -517,7 +512,7 @@ namespace HardwareSimulatorLib.Cluster
             ReplicaIdToPlacementNodeIdMap.Remove(replicaToEvict);
             NodeIdToPlacedReplicasIdMap[placementNodeId].Remove(replicaToEvict);
 
-            if (!NodeIdsUnderUpgrade.Contains(placementNodeId))
+            if (!upgradeState.NodeIdsUnderUpgrade.Contains(placementNodeId))
             {
                 var tenantId = ReplicaInfo.ExtractTenantId(replicaToEvict);
                 var slo = traceMan.TenantIdToSloMap[tenantId];
@@ -559,19 +554,10 @@ namespace HardwareSimulatorLib.Cluster
             }
         }
 
-        public bool IsTimeToUpgrade(TimeSpan timeElapsed)
-        {
-            if (timeElapsed.Ticks < UpgradeScheduler.UpgradeStartTime.Ticks ||
-                    timeElapsed.Ticks > UpgradeScheduler.UpgradeEndTime.Ticks)
-                return false;
-            return (timeElapsed - UpgradeScheduler.UpgradeStartTime).Ticks %
-                UpgradeScheduler.UpgradeLength.Ticks == 0;
-        }
-
         public void Upgrade(TimeSpan timeElapsed)
         {
             try
-            { upgradeScheduler.Upgrade(timeElapsed); }
+            { upgradeExecutor.Upgrade(timeElapsed); }
             catch (Exception e)
             { throw new Exception("Failed - cluster.Upgrade - " + e.Message); }
         }
@@ -616,8 +602,11 @@ namespace HardwareSimulatorLib.Cluster
         public void MoveReplica(TimeSpan timeElapsed, string replicaId, int dstNode,
             bool forPlacement = false, bool forSwap = false)
         {
-            if (!forPlacement && !forSwap) NumMoves++;
-            else if (forPlacement) NumMovesForPlacement++;
+            if (!forSwap)
+            {
+                if (!forPlacement) NumMoves++;
+                else if (forPlacement) NumMovesToEnablePlacement++;
+            }
 
             var trace = traceMan.ReplicaIdToTraceMap[
                 ReplicaInfo.ExtractReplicaId(replicaId)];

@@ -1,10 +1,10 @@
 {
   "ScopeSDK": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\Professional\\Common7\\IDE\\Extensions\\Microsoft\\ScopeStudio\\2.9.0000.1\\CosmosRuntimeSDK\\scope.exe",
-  "RunsPerConfiguration": 1,
-  "SimulationDurationInHours": 696,
-  "WarmupInHours": 24,
+  "RunsPerConfiguration": 10,
+  "SimulationDurationInHours": 2183,
+  "WarmupInHours": 168,
   "SkipDataGeneration": true,
-  "DataFile": "E:\\shayi\\westus\\Test_westus1-a_20201101to1107_AllTR_DiskMem.txt",
+  "DataFile": "C:\\Users\\Amine\\Documents\\data\\westus_20210913-20210919.txt",
   "EnableSloOutput": true,
   "UseOnlyNewTenants": true,
   "ExtrapolateGrowingTenants": true,
@@ -45,11 +45,12 @@
     "PenaltiesParameterThreshold": [ 0.25 ],
     "ProbabilityOfViolationThreshold": [ 0.01 ],
     "ProbabilityOfViolationMCRepetitions": [ 100 ],
-    "MetricWeightingScheme": [ "MinWeight" ]
+    "MetricWeightingScheme": [ "MinWeight" ],
+    "ConsiderUpgrades": true
   },
   "UpgradeAlgorithm": {
     "Heuristic": "GreedilyFailoverPrimThenStdWithSort",
-    "IntervalInHours": 360,
-    "ApplyPlacementPreference": true
+    "IntervalBetweenUpgradesInHours": 672,
+    "TimeToUpgradeSingleNodeInHours": 2
   }
 }

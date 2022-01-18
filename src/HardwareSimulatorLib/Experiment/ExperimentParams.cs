@@ -36,8 +36,11 @@ namespace HardwareSimulatorLib.Experiment
         public ConflictResolutionHeuristicEnum ConflictResolutionHeuristic;
 
         public UpgradeHeuristicEnum UpgradeHeuristic;
-        public int UpgradeIntervalInHours;
-        public bool ApplyPlacementPreference;
+        public int IntervalBetweenUpgradesInHours;
+        public int TimeToUpgradeSingleNodeInHours;
+        public bool ConsiderUpgradesDuringPlacement;
+
+        public int WarmupInHours;
 
         public string outputDirectory;
     }
