@@ -139,11 +139,14 @@ namespace HardwareSimulatorLib.Config
                         MetricWeightingScheme = PlacementAlgo.
                             GetMetricWeightingSchemeAsEnum(
                             PlacementAlgorithm.MetricWeightingScheme[i]),
+                        ConsiderUpgradesDuringPlacement = PlacementAlgorithm.ConsiderUpgrades,
 
                         UpgradeHeuristic = UpgradeAlgo
                             .GetUpgradeHeuristicAsEnum(UpgradeAlgorithm.Heuristic),
-                        UpgradeIntervalInHours = UpgradeAlgorithm.IntervalInHours,
-                        ApplyPlacementPreference = UpgradeAlgorithm.ApplyPlacementPreference
+                        IntervalBetweenUpgradesInHours = UpgradeAlgorithm.IntervalBetweenUpgradesInHours,
+                        TimeToUpgradeSingleNodeInHours = UpgradeAlgorithm.TimeToUpgradeSingleNodeInHours,
+
+                        WarmupInHours = WarmupInHours
                     };
                     experimentParamsID++;
                 }

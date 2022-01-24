@@ -27,9 +27,9 @@ namespace HardwareSimulatorLib.Cluster.Placement
             {
                 default:
                 case PlacementHeuristicEnum.WorstFit:
-                    return new WorstFitSelector(cluster, experimentParams, rand);
-                case PlacementHeuristicEnum.WorstFitUpgrade:
-                    return new WorstFitUpgradeSelector(cluster, experimentParams, rand);
+                    return experimentParams.ConsiderUpgradesDuringPlacement ?
+                        new WorstFitUpgradeSelector(cluster, experimentParams, rand) :
+                        new WorstFitSelector(cluster, experimentParams, rand);
                 case PlacementHeuristicEnum.Bestfit:
                     return new BestFitSelector(cluster, experimentParams, rand);
                 case PlacementHeuristicEnum.SumOfSquares:
@@ -41,9 +41,9 @@ namespace HardwareSimulatorLib.Cluster.Placement
                 case PlacementHeuristicEnum.InnerProduct:
                     return new InnerProductSelector(cluster, experimentParams, rand);
                 case PlacementHeuristicEnum.WorstFitProbabilityViolation:
-                    return new ProbabilityViolationWorstFitSelector(cluster, experimentParams, rand, predictor);
-                case PlacementHeuristicEnum.WorstFitProbabilityViolationUpgrade:
-                    return new ProbabilityViolationWorstFitUpgradeSelector(cluster, experimentParams, rand, predictor);
+                    return experimentParams.ConsiderUpgradesDuringPlacement ?
+                        new ProbabilityViolationWorstFitUpgradeSelector(cluster, experimentParams, rand, predictor) :
+                        new ProbabilityViolationWorstFitSelector(cluster, experimentParams, rand, predictor);
                 case PlacementHeuristicEnum.BestFitProbabilityViolation:
                     return new ProbabilityViolationBestFitSelector(cluster, experimentParams, rand, predictor);
                 case PlacementHeuristicEnum.DotProduct:
@@ -60,7 +60,6 @@ namespace HardwareSimulatorLib.Cluster.Placement
 
             this.nodesToReserve = experimentParams.NodesToReserve;
             this.metricWeightingScheme = experimentParams.MetricWeightingScheme;
-            this.ApplyPlacementPreference = experimentParams.ApplyPlacementPreference;
 
             this.rand = rand;
         }
@@ -124,13 +123,13 @@ namespace HardwareSimulatorLib.Cluster.Placement
 
                 if (ApplyPlacementPreference)
                 {
-                if (swapNode == cluster.NumNodes || swapNode == -1 ||
-                    (placementPreference == PlacementPreference.LowerUpgradeDomains && dstNodeId < swapNode) ||
-                    (placementPreference == PlacementPreference.UpperUpgradeDomains && dstNodeId > swapNode))
-                {
-                    replicaChoice = replicaToSwapWith;
-                    swapNode = dstNodeId;
-                }
+                    if (swapNode == cluster.NumNodes || swapNode == -1 ||
+                        (placementPreference == PlacementPreference.LowerUpgradeDomains && dstNodeId < swapNode) ||
+                        (placementPreference == PlacementPreference.UpperUpgradeDomains && dstNodeId > swapNode))
+                    {
+                        replicaChoice = replicaToSwapWith;
+                        swapNode = dstNodeId;
+                    }
                 }
                 else if (swapNode == cluster.NumNodes || swapNode == -1 || random.NextDouble() > 0.5)
                 {
@@ -145,7 +144,7 @@ namespace HardwareSimulatorLib.Cluster.Placement
             string replicaToMove, string slo, ref UsageInfo replicaToPlaceUsage)
         {
             // 1. Try directly placing the replica on a node.
-            var dstNodeId = FindNodeToPlaceOrMoveTo(replicaToMove,
+            var dstNodeId = FindNodeToPlaceOrMoveTo(timeElapsed, replicaToMove,
                 cluster.NodeIdToCurrCpuUsage, cluster.NodeIdToCurrMemoryUsage,
                 cluster.NodeIdToCurrDiskUsage, replicaToPlaceUsage.Cpu,
                 replicaToPlaceUsage.Memory, replicaToPlaceUsage.Disk);
@@ -154,7 +153,7 @@ namespace HardwareSimulatorLib.Cluster.Placement
             //      space for this replica.
             if (dstNodeId == -1)
             {
-                dstNodeId = cluster.NodeIdsUnderUpgrade.Count == 0 ||
+                dstNodeId = cluster.upgradeState.NodeIdsUnderUpgrade.Count == 0 ||
                             !ApplyPlacementPreference ?
                     FindNodeToMoveToAfterClearingSpace(timeElapsed,
                         replicaToMove, ref replicaToPlaceUsage, -1 /*srcNodeId*/,
@@ -176,7 +175,7 @@ namespace HardwareSimulatorLib.Cluster.Placement
             var srcNodeId = cluster.ReplicaIdToPlacementNodeIdMap[replicaToMove];
 
             // 1. Try directly placing the replica on a node.
-            var dstNodeId = FindNodeToPlaceOrMoveTo(replicaToMove,
+            var dstNodeId = FindNodeToPlaceOrMoveTo(timeElapsed, replicaToMove,
                 cluster.NodeIdToCurrCpuUsage, cluster.NodeIdToCurrMemoryUsage,
                 cluster.NodeIdToCurrDiskUsage, replicaToMoveUsage.Cpu,
                 replicaToMoveUsage.Memory, replicaToMoveUsage.Disk, srcNodeId);
@@ -185,7 +184,7 @@ namespace HardwareSimulatorLib.Cluster.Placement
             //      space for this replica.
             if (dstNodeId == -1)
             {
-                dstNodeId = cluster.NodeIdsUnderUpgrade.Count == 0 ||
+                dstNodeId = cluster.upgradeState.NodeIdsUnderUpgrade.Count == 0 ||
                             !ApplyPlacementPreference ?
                     FindNodeToMoveToAfterClearingSpace(timeElapsed,
                         replicaToMove, ref replicaToMoveUsage, srcNodeId) :
@@ -196,18 +195,18 @@ namespace HardwareSimulatorLib.Cluster.Placement
             return dstNodeId;
         }
 
-        protected virtual int FindNodeToPlaceOrMoveTo(string replicaId,
-            double[] nodeIdToCpuUsage, double[] nodeIdToMemoryUsage,
-            double[] nodeIdToDiskUsage, double replicaCpuUsage,
-            double replicaMemoryUsage, double replicaDiskUsage,
-            int srcNodeId = -1)
+        protected virtual int FindNodeToPlaceOrMoveTo(TimeSpan timeElapsed,
+            string replicaId, double[] nodeIdToCpuUsage,
+            double[] nodeIdToMemoryUsage, double[] nodeIdToDiskUsage,
+            double replicaCpuUsage, double replicaMemoryUsage,
+            double replicaDiskUsage, int srcNodeId = -1)
         {
             ComputeNodeScores(replicaId, nodeIdToCpuUsage, nodeIdToMemoryUsage,
                 nodeIdToDiskUsage, replicaCpuUsage, replicaMemoryUsage,
                 replicaDiskUsage, srcNodeId, out double[] nodeIdToScore,
                 out double optimalScore);
 
-            if (UpgradeScheduler.IsUpgrading &&
+            if (cluster.upgradeState.IsUpgrading(timeElapsed) &&
                 (cluster.IsPrimaryReplica(replicaId) || cluster.IsStandardReplica(replicaId)))
             {
                 UpdateScoresBasedOnUDPreferences(nodeIdToScore, ref optimalScore);
@@ -227,8 +226,8 @@ namespace HardwareSimulatorLib.Cluster.Placement
             // if preference is to go to upper UDs yet the highest UD is under upgrade then
             // preferences can be ignored as they have no impact on these failovers.
             var isPreferenceForLowerUD = cluster.PlacementPreference == PlacementPreference.LowerUpgradeDomains;
-            if (isPreferenceForLowerUD && cluster.DomainUnderUpgrade == 0 ||
-                !isPreferenceForLowerUD && cluster.DomainUnderUpgrade == cluster.NumUDs - 1)
+            if (isPreferenceForLowerUD && cluster.upgradeState.DomainUnderUpgrade == 0 ||
+                !isPreferenceForLowerUD && cluster.upgradeState.DomainUnderUpgrade == cluster.NumUDs - 1)
             {
                 return;
             }
@@ -238,7 +237,7 @@ namespace HardwareSimulatorLib.Cluster.Placement
             //   we can split nodes into 2 sets containing continuous nodeIds:
             //   1. nodes already upgraded (either left or right section dependent on Upgrade direction)
             //   2. nodes to upgrade (either left or right section dependent on Upgrade direction)
-            var smallestNodeIdUnderUpgrade = cluster.DomainUnderUpgrade * ClusterManager.NumNodesPerUD;
+            var smallestNodeIdUnderUpgrade = cluster.upgradeState.DomainUnderUpgrade * ClusterManager.NumNodesPerUD;
             var largestNodeIdUnderUpgrade  = smallestNodeIdUnderUpgrade + ClusterManager.NumNodesPerUD - 1;
             var startNodeIdUpgraded = isPreferenceForLowerUD ?
                 0 : largestNodeIdUnderUpgrade + 1;
@@ -314,7 +313,7 @@ namespace HardwareSimulatorLib.Cluster.Placement
                         chosenDstNodeIdsToClearTo[i], forPlacement);
                 cluster.statistics.NumMovesDueToClearSpace += minNumMoves;
 
-                AssertNodeClearedIsChosenAfterClearing(replicaId,
+                AssertNodeClearedIsChosenAfterClearing(timeElapsed, replicaId,
                     ref replicaToMoveUsage, srcNodeId, chosenNodeToClear);
                 return chosenNodeToClear;
             }
@@ -340,15 +339,16 @@ namespace HardwareSimulatorLib.Cluster.Placement
                 GetExcludedNodesForConstraintsOnUDsAndFDsAndUpgrade(replicaId);
             nodesToExclude.Add(srcNodeId);
 
-            var startNodeIdToClear =
-                cluster.PlacementPreference == PlacementPreference.LowerUpgradeDomains ?
-                    0 :
-                    (cluster.DomainUnderUpgrade + 1) *
+            // instead of cluster.preference, we should get the preference?
+            var startNodeIdToClear = cluster.PlacementPreference ==
+                PlacementPreference.LowerUpgradeDomains ? 0 :
+                    (cluster.upgradeState.DomainUnderUpgrade + 1) *
                         ClusterManager.NumNodesPerUD;
-            var endNodeIdToClear =
-                cluster.PlacementPreference == PlacementPreference.LowerUpgradeDomains ?
-                    cluster.DomainUnderUpgrade * ClusterManager.NumNodesPerUD :
-                    cluster.NumNodes;
+            // instead of cluster.preference, we should get the preference?
+            var endNodeIdToClear = cluster.PlacementPreference ==
+                PlacementPreference.LowerUpgradeDomains ? cluster.upgradeState.
+                    DomainUnderUpgrade * ClusterManager.NumNodesPerUD :
+                        cluster.NumNodes;
 
             for (var nodeIdToClear = startNodeIdToClear;
                      nodeIdToClear < endNodeIdToClear;
@@ -365,15 +365,14 @@ namespace HardwareSimulatorLib.Cluster.Placement
 
             if (chosenNodeToClear == -1)
             {
+                // instead of cluster.preference, we should get the preference?
                 startNodeIdToClear = cluster.PlacementPreference ==
                     PlacementPreference.LowerUpgradeDomains ?
-                        (cluster.DomainUnderUpgrade + 1) *
-                            ClusterManager.NumNodesPerUD :
-                        0;
+                        (cluster.upgradeState.DomainUnderUpgrade + 1) *
+                            ClusterManager.NumNodesPerUD : 0;
                 endNodeIdToClear = cluster.PlacementPreference ==
-                    PlacementPreference.LowerUpgradeDomains ?
-                        cluster.NumNodes :
-                        cluster.DomainUnderUpgrade *
+                    PlacementPreference.LowerUpgradeDomains ? cluster.NumNodes :
+                        cluster.upgradeState.DomainUnderUpgrade *
                             ClusterManager.NumNodesPerUD;
 
                 for (var nodeIdToClear = startNodeIdToClear;
@@ -399,7 +398,7 @@ namespace HardwareSimulatorLib.Cluster.Placement
                         chosenDstNodeIdsToClearTo[i], forPlacement);
                 cluster.statistics.NumMovesDueToClearSpace += minNumMoves;
 
-                AssertNodeClearedIsChosenAfterClearing(replicaId,
+                AssertNodeClearedIsChosenAfterClearing(timeElapsed, replicaId,
                     ref replicaToMoveUsage, srcNodeId, chosenNodeToClear);
                 return chosenNodeToClear;
             }
@@ -476,8 +475,8 @@ namespace HardwareSimulatorLib.Cluster.Placement
                         var usage = trace.GetResourceUsage(timeElapsed -
                             cluster.ReplicaIdToPlacementTime[replica]);
 
-                        var dstNodeId = FindNodeToPlaceOrMoveTo(replica,
-                            nodeIdToCpuUsage, nodeIdToMemUsage,
+                        var dstNodeId = FindNodeToPlaceOrMoveTo(timeElapsed,
+                            replica, nodeIdToCpuUsage, nodeIdToMemUsage,
                             nodeIdToDiskUsage, usage.Cpu, usage.Memory,
                             usage.Disk, nodeIdToClear /* srcNodeId */);
 
@@ -627,11 +626,11 @@ namespace HardwareSimulatorLib.Cluster.Placement
             }
         }
 
-        private void AssertNodeClearedIsChosenAfterClearing(string replicaId,
+        private void AssertNodeClearedIsChosenAfterClearing(TimeSpan timeElapsed, string replicaId,
             ref UsageInfo replicaToMoveUsage, int srcNodeId,
             int chosenDstNodeId)
         {
-            var dstNodeId = FindNodeToPlaceOrMoveTo(replicaId,
+            var dstNodeId = FindNodeToPlaceOrMoveTo(timeElapsed, replicaId,
                 cluster.NodeIdToCurrCpuUsage, cluster.NodeIdToCurrMemoryUsage,
                 cluster.NodeIdToCurrDiskUsage, replicaToMoveUsage.Cpu,
                 replicaToMoveUsage.Memory, replicaToMoveUsage.Disk, srcNodeId);

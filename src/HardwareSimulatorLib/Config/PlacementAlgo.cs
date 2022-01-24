@@ -4,14 +4,12 @@
     {
         Bestfit,
         WorstFit,
-        WorstFitUpgrade,
         VMPlacement,
         SumOfSquares,
         MinStdDiv,
         Penalties,
         InnerProduct,
         WorstFitProbabilityViolation,
-        WorstFitProbabilityViolationUpgrade,
         BestFitProbabilityViolation,
         DotProduct,
         L2Norm
@@ -88,6 +86,7 @@
         public double[] PenaltiesParameterThreshold;
         public double[] ProbabilityOfViolationThreshold;
         public int[] ProbabilityOfViolationMCRepetitions;
+        public bool ConsiderUpgrades;
 
         public static PlacementHeuristicEnum GetPlacementHeuristicAsEnum(
             string PlacementHeuristic)
@@ -100,14 +99,10 @@
                     return PlacementHeuristicEnum.BestFitProbabilityViolation;
                 case "WorstFitProbabilityViolation":
                     return PlacementHeuristicEnum.WorstFitProbabilityViolation;
-                case "WorstFitProbabilityViolationUpgrade":
-                    return PlacementHeuristicEnum.WorstFitProbabilityViolationUpgrade;
                 case "InnerProduct":
                     return PlacementHeuristicEnum.InnerProduct;
                 case "WorstFit":
                     return PlacementHeuristicEnum.WorstFit;
-                case "WorstFitUpgrade":
-                    return PlacementHeuristicEnum.WorstFitUpgrade;
                 case "Penalties":
                     return PlacementHeuristicEnum.Penalties;
                 case "MinStdDiv":

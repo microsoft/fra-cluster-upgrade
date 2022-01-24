@@ -69,11 +69,10 @@
     <Compile Include="Cluster\Placement\PlacementSelector.cs" />
     <Compile Include="Cluster\Placement\Impl\SumOfSquaresSelector.cs" />
     <Compile Include="Cluster\Placement\Impl\ProbabilityViolationWorstFitSelector.cs" />
-    <Compile Include="Cluster\Upgrade\Impl\GreedilyFailoverPrimThenStd.cs" />
-    <Compile Include="Cluster\Upgrade\Impl\GreedilyFailoverWithSort.cs" />
-    <Compile Include="Cluster\Upgrade\Impl\GreedilyFailover.cs" />
-    <Compile Include="Cluster\Upgrade\Impl\GreedilyFailoverPrimThenStdWithSort.cs" />
-    <Compile Include="Cluster\Upgrade\UpgradeScheduler.cs" />
+    <Compile Include="Cluster\Upgrade\ExecutorImpl\GreedilyFailover.cs" />
+    <Compile Include="Cluster\Upgrade\UpgradeScheduleAndState.cs" />
+    <Compile Include="Cluster\Upgrade\ExecutorImpl\GreedilyFailoverPrimThenStdWithSort.cs" />
+    <Compile Include="Cluster\Upgrade\UpgradeExecutor.cs" />
     <Compile Include="Config\ClusterConfiguration.cs" />
     <Compile Include="Config\DataRange.cs" />
     <Compile Include="Config\UpgradeAlgo.cs" />

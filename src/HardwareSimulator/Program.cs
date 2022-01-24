@@ -109,8 +109,8 @@ namespace HardwareSimulator
 
                     using (var ExperimentsLogFile =
                         new StreamWriter(experimentParams.outputDirectory +
-                            @"experiment.log", true))
-                        ExperimentsLogFile.WriteLine(runner.Log);
+                            @"experiment_" + runIdx + ".log", true))
+                        ExperimentsLogFile.WriteLine(runner.LogFailovers);
 
                     stopWatch.Stop();
                     Console.WriteLine("Run finished in " +
@@ -120,7 +120,7 @@ namespace HardwareSimulator
                     {
                         using (var ExperimentsLogFile =
                         new StreamWriter(experimentParams.outputDirectory +
-                            @"experiment.log", true))
+                            @"experiment_" + runIdx + ".log", true))
                             ExperimentsLogFile.WriteLine(e.Message);
                     }
                 }
