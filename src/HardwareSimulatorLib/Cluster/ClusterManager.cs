@@ -191,10 +191,8 @@ namespace HardwareSimulatorLib.Cluster
             {
                 try
                 {
-                    PlaceReplica(timeElapsed, considerUpgradesDuringPlacement ?
-                                                replicas[1] : replicas[0]);
-                    PlaceReplica(timeElapsed, considerUpgradesDuringPlacement ?
-                                                replicas[0] : replicas[1]);
+                    PlaceReplica(timeElapsed, replicas[1]);
+                    PlaceReplica(timeElapsed, replicas[0]);
                     PlaceReplica(timeElapsed, replicas[2]);
                     PlaceReplica(timeElapsed, replicas[3]);
                 }
