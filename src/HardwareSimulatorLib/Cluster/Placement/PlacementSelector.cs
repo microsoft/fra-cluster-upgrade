@@ -30,26 +30,10 @@ namespace HardwareSimulatorLib.Cluster.Placement
                     return experimentParams.ConsiderUpgradesDuringPlacement ?
                         new WorstFitUpgradeSelector(cluster, experimentParams, rand) :
                         new WorstFitSelector(cluster, experimentParams, rand);
-                case PlacementHeuristicEnum.Bestfit:
-                    return new BestFitSelector(cluster, experimentParams, rand);
-                case PlacementHeuristicEnum.SumOfSquares:
-                    return new SumOfSquaresSelector(cluster, experimentParams, rand);
-                case PlacementHeuristicEnum.MinStdDiv:
-                    return new MinStdDivSelector(cluster, experimentParams, rand);
-                case PlacementHeuristicEnum.Penalties:
-                    return new PenaltiesSelector(cluster, experimentParams, rand);
-                case PlacementHeuristicEnum.InnerProduct:
-                    return new InnerProductSelector(cluster, experimentParams, rand);
                 case PlacementHeuristicEnum.WorstFitProbabilityViolation:
                     return experimentParams.ConsiderUpgradesDuringPlacement ?
                         new ProbabilityViolationWorstFitUpgradeSelector(cluster, experimentParams, rand, predictor) :
                         new ProbabilityViolationWorstFitSelector(cluster, experimentParams, rand, predictor);
-                case PlacementHeuristicEnum.BestFitProbabilityViolation:
-                    return new ProbabilityViolationBestFitSelector(cluster, experimentParams, rand, predictor);
-                case PlacementHeuristicEnum.DotProduct:
-                    return new DotProductSelector(cluster, experimentParams, rand);
-                case PlacementHeuristicEnum.L2Norm:
-                    return new L2NormSelector(cluster, experimentParams, rand);
             }
         }
 
@@ -86,7 +70,7 @@ namespace HardwareSimulatorLib.Cluster.Placement
 
             string replicaChoice = null;
             var swapNode = placementPreference == PlacementPreference.
-                LowerUpgradeDomains ? cluster.NumNodes : -1;
+                MinimizeUpgradeDomains ? cluster.NumNodes : -1;
 
             var random = new Random();
             foreach (var replicaToSwapWith in replicas)
@@ -123,15 +107,32 @@ namespace HardwareSimulatorLib.Cluster.Placement
 
                 if (ApplyPlacementPreference)
                 {
-                    if (swapNode == cluster.NumNodes || swapNode == -1 ||
-                        (placementPreference == PlacementPreference.LowerUpgradeDomains && dstNodeId < swapNode) ||
-                        (placementPreference == PlacementPreference.UpperUpgradeDomains && dstNodeId > swapNode))
+                    var updateSwapNode = false;
+                    if (swapNode == cluster.NumNodes || swapNode == -1)
+                        updateSwapNode = true;
+                    else
+                    {
+                        switch (placementPreference) {
+                            case PlacementPreference.MinimizeUpgradeDomains:
+                                if (dstNodeId < swapNode) updateSwapNode = true;
+                                break;
+                            case PlacementPreference.MaximizeUpgradeDomains:
+                                if (dstNodeId > swapNode) updateSwapNode = true;
+                                break;
+                            case PlacementPreference.MaximizeUpgradeDomainsWithBound:
+                                if (dstNodeId > swapNode && dstNodeId < srcNodeId)
+                                    updateSwapNode = true;
+                                break;
+                        }
+                    }
+                    if (updateSwapNode)
                     {
                         replicaChoice = replicaToSwapWith;
                         swapNode = dstNodeId;
                     }
                 }
-                else if (swapNode == cluster.NumNodes || swapNode == -1 || random.NextDouble() > 0.5)
+                else if (swapNode == cluster.NumNodes || swapNode == -1 ||
+                    random.NextDouble() > 0.5 /* pick between the swapped ones at random */)
                 {
                     replicaChoice = replicaToSwapWith;
                     swapNode = dstNodeId;
@@ -185,12 +186,11 @@ namespace HardwareSimulatorLib.Cluster.Placement
             if (dstNodeId == -1)
             {
                 dstNodeId = cluster.upgradeState.NodeIdsUnderUpgrade.Count == 0 ||
-                            !ApplyPlacementPreference ?
+                !ApplyPlacementPreference ?
                     FindNodeToMoveToAfterClearingSpace(timeElapsed,
                         replicaToMove, ref replicaToMoveUsage, srcNodeId) :
                     FindNodeToMoveToAfterClearingSpaceDuringUpgrade(
-                        timeElapsed, replicaToMove, ref replicaToMoveUsage,
-                        srcNodeId);
+                        timeElapsed, replicaToMove, ref replicaToMoveUsage, srcNodeId);
             }
             return dstNodeId;
         }
@@ -215,17 +215,19 @@ namespace HardwareSimulatorLib.Cluster.Placement
             return ChooseNode(nodeIdToScore, optimalScore);
         }
 
-        private void UpdateScoresBasedOnUDPreferences(double[] nodeIdToScore, ref double optimalScore)
+        private void UpdateScoresBasedOnUDPreferences(double[] nodeIdToScore, 
+            ref double optimalScore)
         {
             if (cluster.PlacementPreference == PlacementPreference.None)
             {
-                throw new ArgumentException("Cluster is in an upgrade. Placement preference cannot be None.");
+                throw new ArgumentException("Cluster is in an upgrade. " +
+                    "Placement preference cannot be None.");
             }
 
             // if preference is to go to lower UDs yet the lowest UD is under upgrade OR
             // if preference is to go to upper UDs yet the highest UD is under upgrade then
             // preferences can be ignored as they have no impact on these failovers.
-            var isPreferenceForLowerUD = cluster.PlacementPreference == PlacementPreference.LowerUpgradeDomains;
+            var isPreferenceForLowerUD = cluster.PlacementPreference == PlacementPreference.MinimizeUpgradeDomains;
             if (isPreferenceForLowerUD && cluster.upgradeState.DomainUnderUpgrade == 0 ||
                 !isPreferenceForLowerUD && cluster.upgradeState.DomainUnderUpgrade == cluster.NumUDs - 1)
             {
@@ -341,12 +343,12 @@ namespace HardwareSimulatorLib.Cluster.Placement
 
             // instead of cluster.preference, we should get the preference?
             var startNodeIdToClear = cluster.PlacementPreference ==
-                PlacementPreference.LowerUpgradeDomains ? 0 :
+                PlacementPreference.MinimizeUpgradeDomains ? 0 :
                     (cluster.upgradeState.DomainUnderUpgrade + 1) *
                         ClusterManager.NumNodesPerUD;
             // instead of cluster.preference, we should get the preference?
             var endNodeIdToClear = cluster.PlacementPreference ==
-                PlacementPreference.LowerUpgradeDomains ? cluster.upgradeState.
+                PlacementPreference.MinimizeUpgradeDomains ? cluster.upgradeState.
                     DomainUnderUpgrade * ClusterManager.NumNodesPerUD :
                         cluster.NumNodes;
 
@@ -367,11 +369,11 @@ namespace HardwareSimulatorLib.Cluster.Placement
             {
                 // instead of cluster.preference, we should get the preference?
                 startNodeIdToClear = cluster.PlacementPreference ==
-                    PlacementPreference.LowerUpgradeDomains ?
+                    PlacementPreference.MinimizeUpgradeDomains ?
                         (cluster.upgradeState.DomainUnderUpgrade + 1) *
                             ClusterManager.NumNodesPerUD : 0;
                 endNodeIdToClear = cluster.PlacementPreference ==
-                    PlacementPreference.LowerUpgradeDomains ? cluster.NumNodes :
+                    PlacementPreference.MinimizeUpgradeDomains ? cluster.NumNodes :
                         cluster.upgradeState.DomainUnderUpgrade *
                             ClusterManager.NumNodesPerUD;
 

@@ -26,7 +26,7 @@
         public double[] DiskCaps = { 1.0, 0.70, 0.75, 0.8 };
         public double[] MemoryCaps = { 0.9, 0.85 };
         public double[] CpuCaps = { 0.9 };
-        public double[] NodeMemMaxUsageRatiosForPlacement = { 1.0 /*0.9*/ };
-        public double[] NodeDiskMaxUsageRatiosForPlacement = { 1.0 /*0.9*/ };
+        public double[] NodeMemMaxUsageRatiosForPlacement = { 0.9 };
+        public double[] NodeDiskMaxUsageRatiosForPlacement = { 0.9 };
     }
 }

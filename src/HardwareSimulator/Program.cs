@@ -54,7 +54,8 @@ namespace HardwareSimulator
             var actualNumExperiments = numExperiments -
                 simConfig.StartConfigurationId /*NumExperiementsToSkip*/;
 
-            var searchSpaceSize = simConfig.GetSearchSpaceSize();
+            var totalRunIdx = 0;
+
             var multiRunStats = new SimulationStatistics(actualNumExperiments);
             var simDuration = TimeSpan.FromHours(
                 simConfig.SimulationDurationInHours);
@@ -83,7 +84,7 @@ namespace HardwareSimulator
                     {
                         sw.WriteLine("Run number: " + (runIdx + 1));
                     }
-                    Console.WriteLine("Run number: " + (runIdx + 1) + "/ {0}", totalNumRuns);
+                    Console.WriteLine("Run number: " + ((totalRunIdx++) + 1) + "/ {0}", totalNumRuns);
 
                     try {
                         var runner = new ExperimentRunner(simDuration,
@@ -129,12 +130,11 @@ namespace HardwareSimulator
                     RunsPerConfiguration, totalSimIntervalsOverAllRuns);
                 statisticsAvgsOverAllRuns.Log(
                     experimentParams.outputDirectory + "Summary.tsv");
-                var placementOffset = experimentParams.ID % searchSpaceSize;
-                multiRunStats.Append(placementOffset, experimentParams,
-                    simConfig, statisticsAvgsOverAllRuns);
+                multiRunStats.Append(experimentParams, simConfig,
+                    statisticsAvgsOverAllRuns);
             }
 
-        multiRunStats.Log(outputDirectory);
+            multiRunStats.Log(outputDirectory);
             stopWatchAll.Stop();
             Console.WriteLine($"Completed {totalNumRuns} experiments in " +
                 $"{stopWatchAll.Elapsed.TotalMinutes:0.0} minutes " +
@@ -142,78 +142,78 @@ namespace HardwareSimulator
                 $"sec/experiment)");
         }
 
-    public static string GetTraceFilename(
-        ref SimulationConfiguration simulationConfig)
-    {
-        var tracefile = "";
-        var dataPull = new DataPull(simulationConfig.ScopeSDK,
-            simulationConfig.TraceSourceTable);
-        if (!simulationConfig.SkipDataGeneration)
+        public static string GetTraceFilename(
+            ref SimulationConfiguration simulationConfig)
         {
-            var success = dataPull.TrySubmitDataPull(simulationConfig.
-                DataRange.Region,
-                DateTime.Parse(simulationConfig.DataRange.StartDate),
-                DateTime.Parse(simulationConfig.DataRange.EndDate),
-                simulationConfig.DataRange.HardwareGeneration,
-                out string resultPath)
-                && dataPull.TryDownloadFile(resultPath, out tracefile);
-            if (!success)
+            var tracefile = "";
+            var dataPull = new DataPull(simulationConfig.ScopeSDK,
+                simulationConfig.TraceSourceTable);
+            if (!simulationConfig.SkipDataGeneration)
             {
-                Console.WriteLine("Failed to get data from Cosmos");
-                Environment.Exit(-1);
-            }
-        }
-        else
-        {
-            if (string.IsNullOrWhiteSpace(simulationConfig.DataFile))
-                tracefile = dataPull.GetLocalDataFile(
-                    dataPull.GetCosmosDataFile(simulationConfig.DataRange
-                        .Region.ToLower(),
+                var success = dataPull.TrySubmitDataPull(simulationConfig.
+                    DataRange.Region,
                     DateTime.Parse(simulationConfig.DataRange.StartDate),
-                    DateTime.Parse(simulationConfig.DataRange.EndDate)));
+                    DateTime.Parse(simulationConfig.DataRange.EndDate),
+                    simulationConfig.DataRange.HardwareGeneration,
+                    out string resultPath)
+                    && dataPull.TryDownloadFile(resultPath, out tracefile);
+                if (!success)
+                {
+                    Console.WriteLine("Failed to get data from Cosmos");
+                    Environment.Exit(-1);
+                }
+            }
             else
-                tracefile = simulationConfig.DataFile.Trim();
+            {
+                if (string.IsNullOrWhiteSpace(simulationConfig.DataFile))
+                    tracefile = dataPull.GetLocalDataFile(
+                        dataPull.GetCosmosDataFile(simulationConfig.DataRange
+                            .Region.ToLower(),
+                        DateTime.Parse(simulationConfig.DataRange.StartDate),
+                        DateTime.Parse(simulationConfig.DataRange.EndDate)));
+                else
+                    tracefile = simulationConfig.DataFile.Trim();
 
-            if (!File.Exists(tracefile))
-                throw new Exception($"{tracefile} does not exist." +
-                    $" Set 'SkipDataGeneration' to false" +
-                    $" to generate simulation data.");
+                if (!File.Exists(tracefile))
+                    throw new Exception($"{tracefile} does not exist." +
+                        $" Set 'SkipDataGeneration' to false" +
+                        $" to generate simulation data.");
+            }
+            return tracefile;
         }
-        return tracefile;
-    }
 
-    private static string GetOutputDirectoryAndCreateIfNecessary(
-        string output, ref SimulationConfiguration simulationConfig)
-    {
-        var outputDirectory = $"{output.TrimEnd('\\')}" +
-            $"\\{simulationConfig.DataRange.Region}\\";
-        if (!Directory.Exists(outputDirectory))
-            Directory.CreateDirectory(outputDirectory);
-        return outputDirectory;
-    }
+        private static string GetOutputDirectoryAndCreateIfNecessary(
+            string output, ref SimulationConfiguration simulationConfig)
+        {
+            var outputDirectory = $"{output.TrimEnd('\\')}" +
+                $"\\{simulationConfig.DataRange.Region}\\";
+            if (!Directory.Exists(outputDirectory))
+                Directory.CreateDirectory(outputDirectory);
+            return outputDirectory;
+        }
 
-    private static void LogReplicaIdToSloIdMap(string outputDirectory,
-        TraceManager traceManager)
-    {
-        using (var file = new StreamWriter(outputDirectory +
-                @"TenantSlo.tsv"))
-            foreach (var replicaId in traceManager.TenantIdToSloMap)
-                file.WriteLine(string.Join(",", replicaId.Key,
-                    replicaId.Value));
-    }
+        private static void LogReplicaIdToSloIdMap(string outputDirectory,
+            TraceManager traceManager)
+        {
+            using (var file = new StreamWriter(outputDirectory +
+                    @"TenantSlo.tsv"))
+                foreach (var replicaId in traceManager.TenantIdToSloMap)
+                    file.WriteLine(string.Join(",", replicaId.Key,
+                        replicaId.Value));
+        }
 
-    private static void PrintExpectedArgsHelp()
-    {
-        var processName = Process.GetCurrentProcess().ProcessName;
-        Console.WriteLine("Expecting Simulation configuration json file," +
-            " please specify a path for the configuration file");
-        Console.WriteLine($"\r\nUsage: {processName} " +
-            $"-SimulationConfiguration <configuration.json> " +
-            $"-Output <output path>");
-        Console.WriteLine("\r\nExample:");
-        Console.WriteLine($"\t{processName} " +
-            $"-SimulationConfiguration .\\SimConfig.json " +
-            $"-Output .\\output\\");
+        private static void PrintExpectedArgsHelp()
+        {
+            var processName = Process.GetCurrentProcess().ProcessName;
+            Console.WriteLine("Expecting Simulation configuration json file," +
+                " please specify a path for the configuration file");
+            Console.WriteLine($"\r\nUsage: {processName} " +
+                $"-SimulationConfiguration <configuration.json> " +
+                $"-Output <output path>");
+            Console.WriteLine("\r\nExample:");
+            Console.WriteLine($"\t{processName} " +
+                $"-SimulationConfiguration .\\SimConfig.json " +
+                $"-Output .\\output\\");
+        }
     }
-}
 }

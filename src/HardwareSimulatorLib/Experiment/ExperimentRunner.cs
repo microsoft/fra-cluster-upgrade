@@ -155,7 +155,8 @@ namespace HardwareSimulatorLib.Experiment
                     cluster.NumMoves + "," + cluster.NumMovesToEnablePlacement +
                     "," + cluster.NumSwaps + "," + cluster.upgradeExecutor.NumMoves;
                 NumMemViolations = NumDiskViolations =
-                    cluster.NumMoves = cluster.NumSwaps = 0;
+                    cluster.NumMoves = cluster.NumSwaps =
+                        cluster.upgradeExecutor.NumMoves = 0;
                 cluster.upgradeState.nextIdx++;
             }
         }

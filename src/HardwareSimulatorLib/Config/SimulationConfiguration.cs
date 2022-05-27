@@ -40,9 +40,8 @@ namespace HardwareSimulatorLib.Config
                    SearchSpace.DiskSizesInGB.Length *
                    SearchSpace.MemorySizesInGB.Length *
                    SearchSpace.OverbookingRatios.Length *
-                   SearchSpace.NodeMemMaxUsageRatiosForPlacement.Length * 
-                   SearchSpace.NodeDiskMaxUsageRatiosForPlacement.Length * 
-                   PlacementAlgorithm.PlacementHeuristic.Length;
+                   SearchSpace.NodeMemMaxUsageRatiosForPlacement.Length *
+                   SearchSpace.NodeDiskMaxUsageRatiosForPlacement.Length;
         }
 
         public int GetSearchSpaceSize()
@@ -69,87 +68,71 @@ namespace HardwareSimulatorLib.Config
             foreach (var overbookingRatio in SearchSpace.OverbookingRatios)
             foreach (var nodeMemMaxUsageRatioForPlacement in SearchSpace.NodeMemMaxUsageRatiosForPlacement)
             foreach (var nodeDiskMaxUsageRatioForPlacement in SearchSpace.NodeDiskMaxUsageRatiosForPlacement)
-            /* We fix values over the search space then loop over the set of
-             * possible experiments based on the 'PlacementAlgorithm' */
+            /* We fix values over the search space then generate a sim configuration */
             {
-                for (var i = 0;
-                         i < PlacementAlgorithm.PlacementHeuristic.Length; i++)
+                if (experimentParamsID < StartConfigurationId)
                 {
-                    /* We skip StartConfigurationId experiments if a crash
-                     * happens in a large num of experiments in a given sim */
-                    if (experimentParamsID < StartConfigurationId)
-                    {
-                        experimentParamsID++;
-                        continue;
-                    }
-                    yield return new ExperimentParams
-                    {
-                        // First, set search space params.
-                        ID = experimentParamsID,
-                        CpuCap = cpuCap,
-                        DiskCap = diskCap,
-                        MemoryCap = memoryCap,
-                        OverbookingRatio = overbookingRatio,
-                        NodeNumCores = Math.Floor(vCoresPerNode * (1.0 - 0.07)),
-                        NodeMemorySizeInMB = 1024 * (memorySizeInGB - 
-                            ClusterConfiguration.MemoryOverheadPerNodeInGB),
-                        NodeDiskSizeInMB   = 1024 * (diskSizeInGB -
-                            ClusterConfiguration.DiskOverheadPerNodeInGB),
-                        NodeMemUsageLimitForPlacement = 1024 * (memorySizeInGB -
-                            ClusterConfiguration.MemoryOverheadPerNodeInGB) * 
+                    experimentParamsID++;
+                    continue;
+                }
+                yield return new ExperimentParams
+                {
+                    // First, set search space params.
+                    ID = experimentParamsID,
+                    CpuCap = cpuCap,
+                    DiskCap = diskCap,
+                    MemoryCap = memoryCap,
+                    OverbookingRatio = overbookingRatio,
+                    NodeNumCores = Math.Floor(vCoresPerNode * (1.0 - 0.07)),
+                    NodeMemorySizeInMB = 1024 * (memorySizeInGB -
+                        ClusterConfiguration.MemoryOverheadPerNodeInGB),
+                    NodeDiskSizeInMB = 1024 * (diskSizeInGB -
+                        ClusterConfiguration.DiskOverheadPerNodeInGB),
+                    NodeMemUsageLimitForPlacement = 1024 * (memorySizeInGB -
+                        ClusterConfiguration.MemoryOverheadPerNodeInGB) *
                             nodeMemMaxUsageRatioForPlacement,
-                        NodeDiskUsageLimitForPlacement = 1024 * (diskSizeInGB -
-                            ClusterConfiguration.DiskOverheadPerNodeInGB) *
+                    NodeDiskUsageLimitForPlacement = 1024 * (diskSizeInGB -
+                        ClusterConfiguration.DiskOverheadPerNodeInGB) *
                             nodeDiskMaxUsageRatioForPlacement,
 
-                        // Second, set base experiment params.
-                        NumNodes = ClusterConfiguration.Nodes,
-                        HardwareGeneration = DataRange.HardwareGeneration,
-                        NodesToReserve = PlacementAlgorithm.NodesToReserve[i],
-                        PenaltiesParameterThreshold = PlacementAlgorithm.
-                            PenaltiesParameterThreshold[i],
-                        ProbabilityOfViolationThreshold = PlacementAlgorithm.
-                            ProbabilityOfViolationThreshold[i],
-                        ProbabilityOfViolationMCRepetitions =
-                            PlacementAlgorithm.
-                            ProbabilityOfViolationMCRepetitions[i],
-                        ExtrapolateGrowingTenants = ExtrapolateGrowingTenants,
-                        AllowTenantPlacementFailures =
-                            AllowTenantPlacementFailures,
-                        OnlyPremiumTenants = OnlyPremiumTenants,
-                        LookAheadOffset = LookAheadOffset,
-                        MinPlacementTimeForLookAhead =
-                            MinPlacementTimeForLookAhead,
-                        ApplyFaultDomainConstraints = ApplyFaultDomainConstraints,
+                    // Second, set base experiment params.
+                    NumNodes = ClusterConfiguration.Nodes,
+                    HardwareGeneration = DataRange.HardwareGeneration,
+                    NodesToReserve = PlacementAlgorithm.NodesToReserve,
+                    PenaltiesParameterThreshold = PlacementAlgorithm.
+                        PenaltiesParameterThreshold,
+                    ProbabilityOfViolationThreshold = PlacementAlgorithm.
+                        ProbabilityOfViolationThreshold,
+                    ProbabilityOfViolationMCRepetitions = PlacementAlgorithm.
+                        ProbabilityOfViolationMCRepetitions,
+                    ExtrapolateGrowingTenants = ExtrapolateGrowingTenants,
+                    AllowTenantPlacementFailures = AllowTenantPlacementFailures,
+                    OnlyPremiumTenants = OnlyPremiumTenants,
+                    LookAheadOffset = LookAheadOffset,
+                    MinPlacementTimeForLookAhead = MinPlacementTimeForLookAhead,
+                    ApplyFaultDomainConstraints = ApplyFaultDomainConstraints,
 
-                        // Finally, set placement algo params
-                        PlacementHeuristic = PlacementAlgo
-                            .GetPlacementHeuristicAsEnum(
-                                PlacementAlgorithm.PlacementHeuristic[i]),
-                        MetricToUseForPlacement = PlacementAlgo
-                            .GetMetricToUseForPlacementAsEnum(
-                                PlacementAlgorithm.MetricToUseForPlacement[i]),
-                        MetricToUseForNodeLoad = PlacementAlgo
-                            .GetMetricToUseForNodeLoadAsEnum(
-                                PlacementAlgorithm.MetricToUseForNodeLoad[i]),
-                        ConflictResolutionHeuristic = PlacementAlgo
-                            .GetConflictResolutionHeuristicAsEnum(
-                                PlacementAlgorithm
-                                .ConflictResolutionHeuristic[i]),
-                        MetricWeightingScheme = PlacementAlgo.
-                            GetMetricWeightingSchemeAsEnum(
-                            PlacementAlgorithm.MetricWeightingScheme[i]),
-                        ConsiderUpgradesDuringPlacement = PlacementAlgorithm.ConsiderUpgrades,
+                    // Finally, set placement algo params
+                    PlacementHeuristic = PlacementAlgo.GetPlacementHeuristicAsEnum(
+                        PlacementAlgorithm.PlacementHeuristic),
+                    MetricToUseForPlacement = PlacementAlgo.GetMetricToUseForPlacementAsEnum(
+                        PlacementAlgorithm.MetricToUseForPlacement),
+                    MetricToUseForNodeLoad = PlacementAlgo.GetMetricToUseForNodeLoadAsEnum(
+                        PlacementAlgorithm.MetricToUseForNodeLoad),
+                    ConflictResolutionHeuristic = PlacementAlgo.GetConflictResolutionHeuristicAsEnum(
+                        PlacementAlgorithm.ConflictResolutionHeuristic),
+                    MetricWeightingScheme = PlacementAlgo.GetMetricWeightingSchemeAsEnum(
+                        PlacementAlgorithm.MetricWeightingScheme),
+                    ConsiderUpgradesDuringPlacement = PlacementAlgorithm.ConsiderUpgrades,
 
-                        UpgradeHeuristic = UpgradeAlgo
-                            .GetUpgradeHeuristicAsEnum(UpgradeAlgorithm.Heuristic),
-                        IntervalBetweenUpgradesInHours = UpgradeAlgorithm.IntervalBetweenUpgradesInHours,
-                        TimeToUpgradeSingleNodeInHours = UpgradeAlgorithm.TimeToUpgradeSingleNodeInHours,
+                    UpgradeHeuristic = UpgradeAlgo.GetUpgradeHeuristicAsEnum(UpgradeAlgorithm.Heuristic),
+                    IntervalBetweenUpgradesInHours = UpgradeAlgorithm.IntervalBetweenUpgradesInHours,
+                    TimeToUpgradeSingleNodeInHours = UpgradeAlgorithm.TimeToUpgradeSingleNodeInHours,
+                    IsUpgradeUnidirectional = UpgradeAlgorithm.IsUnidirectional,
 
-                        WarmupInHours = WarmupInHours
-                    };
-                    experimentParamsID++;
-                }
+                    WarmupInHours = WarmupInHours
+                };
+                experimentParamsID++;                                
             }
         }
     }
