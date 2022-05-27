@@ -18,32 +18,35 @@ namespace HardwareSimulatorLib.Cluster.Upgrade
         public HashSet<int> NodeIdsUnderUpgrade;
         public int DomainUnderUpgrade;
 
-        private int NumUDs;
+        public readonly bool IsUpgradeUnidirectional;
+        private readonly int NumUDs;
 
         public bool IsUpgradeLowerToHigherUDs
         {
             get
             {
-                // upgrades 0, 2, 4, ... upgrades UDs from low to high.
-                // upgrades 1, 2, 5, ... upgrades UDs from high to low.
-                return nextIdx % 2 == 0;
+                // If upgrade is unidirectional, then all upgrades are from low to high UDs.
+                // Otherwise:
+                //    1st, 3rd, 5th etc. are from low to high UDs.
+                //    2nd, 4th, 6th etc. are from high to low UDs.
+                return IsUpgradeUnidirectional || (nextIdx % 2 == 0);
             }
         }
 
         public int[] numReplicasInDomainUnderUpgrade = new int[] { -1, -1, -1, -1 };
 
         public UpgradeScheduleAndState(int WarmupInHours,
-            int IntervalBetweenUpgradesInHours, int NumUDs,
+            int IntervalBetweenUpgradesInHours, int NumUDs, bool IsUpgradeUnidirectional,
             int TimeToUpgradeSingleNodeInHours, TimeSpan simDuration)
         {
             this.NumUDs = NumUDs;
+            this.IsUpgradeUnidirectional = IsUpgradeUnidirectional;
 
             var initialTime = TimeSpan.FromHours(WarmupInHours);
             IntervalBetweenUpgrades = TimeSpan.FromHours(IntervalBetweenUpgradesInHours);
             TimeToUpgradeUDs = TimeSpan.FromHours(TimeToUpgradeSingleNodeInHours * NumUDs);
             TimeToUpgradeSingleUD = TimeSpan.FromHours(TimeToUpgradeSingleNodeInHours);
-            TimeToStartUpgradeLastUD = TimeSpan.FromHours(
-                (NumUDs - 1) * TimeToUpgradeSingleNodeInHours);
+            TimeToStartUpgradeLastUD = TimeSpan.FromHours((NumUDs - 1) * TimeToUpgradeSingleNodeInHours);
 
             var numUpgrades = 0;
             for (var timeElapsed = initialTime + IntervalBetweenUpgrades;
@@ -66,39 +69,32 @@ namespace HardwareSimulatorLib.Cluster.Upgrade
             NodeIdsUnderUpgrade = new HashSet<int>();
         }
 
-        public int GetNumUpgradesPlanned()
-            => UpgradeStartElapsedTime.Length;
-        
+        public int GetNumUpgradesPlanned() => UpgradeStartElapsedTime.Length;
 
-        public int GetInitialUD()
-            => IsUpgradeLowerToHigherUDs ? 0 : NumUDs - 1;
-
-        public int GetLastUD()
-            => IsUpgradeLowerToHigherUDs ? NumUDs - 1 : 0;
+        public int GetInitialUD() => IsUpgradeLowerToHigherUDs ? 0 : NumUDs - 1;
 
         public int GetPreviouslyUpgradedUD(int UD)
             => IsUpgradeLowerToHigherUDs ? UD - 1 : UD + 1;
 
         public PlacementPreference GetPlacementPreference()
-            => IsUpgradeLowerToHigherUDs ?
-                   PlacementPreference.LowerUpgradeDomains :
-                   PlacementPreference.UpperUpgradeDomains ;
+            => IsUpgradeUnidirectional ?
+                PlacementPreference.MaximizeUpgradeDomainsWithBound :
+                (IsUpgradeLowerToHigherUDs ?
+                    PlacementPreference.MinimizeUpgradeDomains :
+                    PlacementPreference.MaximizeUpgradeDomains);
 
         public PlacementPreference GetSwapPlacementPreference(int UD)
             => UD == GetInitialUD() ?
-            // TODO: add comment.
                 (IsUpgradeLowerToHigherUDs ?
-                    PlacementPreference.UpperUpgradeDomains :
-                    PlacementPreference.LowerUpgradeDomains) :
-                (IsUpgradeLowerToHigherUDs ?
-                    PlacementPreference.LowerUpgradeDomains :
-                    PlacementPreference.UpperUpgradeDomains);
+                    PlacementPreference.MaximizeUpgradeDomains :
+                    PlacementPreference.MinimizeUpgradeDomains) :
+                GetPlacementPreference();
 
         public bool IsInInitialUD(int nodeId)
         {
             return IsUpgradeLowerToHigherUDs ?
                 (nodeId < ClusterManager.NumNodesPerUD) :
-                (nodeId >= ClusterManager.NumNodesPerUD * 9/* TODO: remove hardcoding */ );
+                (nodeId >= ClusterManager.NumNodesPerUD * 9 /* TODO: remove hardcoding */ );
         }
 
         public bool IsUpgrading(TimeSpan timeElapsed)
@@ -140,11 +136,5 @@ namespace HardwareSimulatorLib.Cluster.Upgrade
         public bool IsTimeToEndUpgrade(TimeSpan elapsedTime)
             => nextIdx < UpgradeEndElapsedTime.Length &&
                 elapsedTime == UpgradeEndElapsedTime[nextIdx];
-
-        public void ResetNumReplicasOnDomainUnderUpgrade()
-        {
-            for (var i = 0; i < numReplicasInDomainUnderUpgrade.Length; i++)
-                numReplicasInDomainUnderUpgrade[i] = -1;
-        }
     }
 }

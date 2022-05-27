@@ -72,7 +72,9 @@ namespace HardwareSimulatorLib.Cluster.Upgrade
                     cluster.upgradeState.
                         numReplicasInDomainUnderUpgrade[i] <
                             cluster.NodeIdToPlacedReplicasIdMap[nodeId].Count)
+                {
                     throw new Exception("AssertNoNewlyPlacedReplicasOnNodesUnderUpgrade Failed.");
+                }
                 i++;
             }
         }
@@ -86,8 +88,10 @@ namespace HardwareSimulatorLib.Cluster.Upgrade
                 foreach (var replica in cluster.NodeIdToPlacedReplicasIdMap[nodeId])
                 {
                     if (cluster.IsPrimaryReplica(replica) ||
-                        cluster.IsStandardReplica(replica))
-                        throw new Exception("NoStandardsOrPrimariesLeft Failed.");
+                            cluster.IsStandardReplica(replica))
+                    {
+                        throw new Exception("AssertNoStandardsOrPrimaries Failed.");
+                    }
                 }
             }
         }

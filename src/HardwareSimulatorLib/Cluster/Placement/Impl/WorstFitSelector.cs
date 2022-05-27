@@ -48,6 +48,14 @@ namespace HardwareSimulatorLib.Cluster.Placement.Impl
                 nodeIdToScore[nodeId] = (-1) * ComputeAggregateDiff(diskDiff,
                     memoryDiff, cpuDiff, diskMean, memoryMean, cpuMean);
 
+                if (nodeIdToDiskUsage[nodeId] + replicaDiskUsage > cluster.NodeDiskUsageLimitForPlacement ||
+                    nodeIdToMemoryUsage[nodeId] + replicaMemoryUsage > cluster.NodeMemUsageLimitForPlacement)
+                {
+                    nodeIdToScore[nodeId]++;
+                }
+
+
+                // TODO: if threshold added.
                 if (optimalScore == double.MaxValue ||
                     optimalScore > nodeIdToScore[nodeId])  // Minimize score
                 {

@@ -29,8 +29,8 @@ namespace HardwareSimulatorLib.Cluster.Upgrade
             var currNumMoves = cluster.NumMoves;
 
             var stopWatch = Stopwatch.StartNew();
-            var nonSwapperPrimaries = SwapPrimariesAndGetNonSwappedOnes(timeElapsed, UD);
-            MoveStandardAndNonSwappedPrimaries(timeElapsed, UD, nonSwapperPrimaries);
+            var nonSwappedPrimaries = SwapPrimariesAndGetNonSwappedOnes(timeElapsed, UD);
+            MoveStandardAndNonSwappedPrimaries(timeElapsed, UD, nonSwappedPrimaries);
             stopWatch.Stop();
 
             NumMoves += (cluster.NumMoves - currNumMoves);
@@ -47,7 +47,7 @@ namespace HardwareSimulatorLib.Cluster.Upgrade
         {
             var primaryReplicasOnUD = cluster.
                 GetPrimaryReplicasSortedByResourceUsage(timeElapsed, UD);
-            var primaryReplicasToMove = new HashSet<string>();
+            var primaryReplicasNotSwapped = new HashSet<string>();
             foreach (var primaryReplica in primaryReplicasOnUD)
             {
                 var replicaToSwapWith = placementSelector.ChooseReplicaToSwapWith(
@@ -55,9 +55,9 @@ namespace HardwareSimulatorLib.Cluster.Upgrade
                         GetSwapPlacementPreference(UD));
                 if (replicaToSwapWith != null)
                     cluster.Swap(timeElapsed, primaryReplica, replicaToSwapWith);
-                else primaryReplicasToMove.Add(primaryReplica);
+                else primaryReplicasNotSwapped.Add(primaryReplica);
             }
-            return primaryReplicasToMove;
+            return primaryReplicasNotSwapped;
         }
 
         private void MoveStandardAndNonSwappedPrimaries(TimeSpan timeElapsed, int UD,

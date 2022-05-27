@@ -39,6 +39,7 @@ namespace HardwareSimulatorLib.Experiment
         public int IntervalBetweenUpgradesInHours;
         public int TimeToUpgradeSingleNodeInHours;
         public bool ConsiderUpgradesDuringPlacement;
+        public bool IsUpgradeUnidirectional;
 
         public int WarmupInHours;
 

@@ -13,6 +13,7 @@
         public string Heuristic;
         public int IntervalBetweenUpgradesInHours;
         public int TimeToUpgradeSingleNodeInHours;
+        public bool IsUnidirectional;
 
         public static UpgradeHeuristicEnum GetUpgradeHeuristicAsEnum(
             string PlacementHeuristic)

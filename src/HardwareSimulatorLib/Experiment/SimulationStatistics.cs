@@ -37,24 +37,24 @@ namespace HardwareSimulatorLib.Experiment
             ProbabilityOfViolationMCRepetitions = new int[numExperiments];
         }
 
-        public void Append(int placementOffset, ExperimentParams experimentParams,
-            SimulationConfiguration simulationConfig, ExperimentStatistics statisticsAvgsOverAllRuns)
+        public void Append(ExperimentParams experimentParams, SimulationConfiguration simulationConfig,
+            ExperimentStatistics statisticsAvgsOverAllRuns)
         {
             var idx = experimentParams.ID;
             var numIDsSkipped = simulationConfig.StartConfigurationId;
             var placementAlgo = simulationConfig.PlacementAlgorithm;
-            PlacementAlgorithm[idx] = placementAlgo.PlacementHeuristic[placementOffset];
-            NodesToReserve[idx] = placementAlgo.NodesToReserve[placementOffset];
-            PenaltiesParameterThreshold[idx] = placementAlgo.PenaltiesParameterThreshold[placementOffset];
-            ProbabilityOfViolationThreshold[idx] = placementAlgo.ProbabilityOfViolationThreshold[placementOffset];
+            PlacementAlgorithm[idx] = placementAlgo.PlacementHeuristic;
+            NodesToReserve[idx] = placementAlgo.NodesToReserve;
+            PenaltiesParameterThreshold[idx] = placementAlgo.PenaltiesParameterThreshold;
+            ProbabilityOfViolationThreshold[idx] = placementAlgo.ProbabilityOfViolationThreshold;
             OverbookingRatios[idx] = experimentParams.OverbookingRatio;
             AvgMovesPerConfiguration[idx - numIDsSkipped] = statisticsAvgsOverAllRuns.Moves;
             AvgDiskViolationsPerConfiguration[idx - numIDsSkipped] = statisticsAvgsOverAllRuns.NumDiskViolations;
             AvgMemViolationsPerConfiguration[idx - numIDsSkipped] = statisticsAvgsOverAllRuns.NumMemViolations;
             AvgIDSUMovedPerConfiguration[idx - numIDsSkipped] = statisticsAvgsOverAllRuns.DiskMoved;
             AvgAMUMovedPerConfiguration[idx - numIDsSkipped] = statisticsAvgsOverAllRuns.MemoryMoved;
-            MetricToUseForPlacement[idx] = placementAlgo.MetricToUseForPlacement[placementOffset];
-            ProbabilityOfViolationMCRepetitions[idx] = placementAlgo.ProbabilityOfViolationMCRepetitions[placementOffset];
+            MetricToUseForPlacement[idx] = placementAlgo.MetricToUseForPlacement;
+            ProbabilityOfViolationMCRepetitions[idx] = placementAlgo.ProbabilityOfViolationMCRepetitions;
             ConfigurationIDs[idx - numIDsSkipped] = idx;
         }
 

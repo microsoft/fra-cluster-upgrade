@@ -35,8 +35,8 @@ namespace HardwareSimulatorLib.Cluster.Placement.Impl
 
                 // Check if node can accomodate the new tenant's resource usage
                 if (excludedNodeIds.Contains(nodeId) ||
-                    nodeIdToDiskUsage[nodeId] + replicaDiskUsage > cluster.NodeDiskUsageLimitForPlacement ||
-                    nodeIdToMemoryUsage[nodeId] + replicaMemoryUsage > cluster.NodeMemUsageLimitForPlacement ||
+                    nodeIdToDiskUsage[nodeId] + replicaDiskUsage > cluster.NodeDiskSizeInMB ||
+                    nodeIdToMemoryUsage[nodeId] + replicaMemoryUsage > cluster.NodeMemorySizeInMB ||
                     nodeIdToCpuUsage[nodeId] + replicaCpuUsage > cluster.NodeNumCores * 10000 ||
                     nodeId == srcNodeId)
                 {
@@ -73,6 +73,13 @@ namespace HardwareSimulatorLib.Cluster.Placement.Impl
                         }
                     }
                     nodeIdToScore[nodeId] += isReplicaLowestUD ? 1 : 0;
+                }
+
+
+                if (nodeIdToDiskUsage[nodeId] + replicaDiskUsage > cluster.NodeDiskUsageLimitForPlacement ||
+                    nodeIdToMemoryUsage[nodeId] + replicaMemoryUsage > cluster.NodeMemUsageLimitForPlacement)
+                {
+                    nodeIdToScore[nodeId]++;
                 }
 
                 if (optimalScore == double.MaxValue ||

@@ -75,17 +75,17 @@
     // The parameters will be passed-in as a JSON file to the program.
     public class PlacementAlgo
     {
-        public string[] PlacementHeuristic;
-        public string[] MetricToUseForPlacement;
-        public string[] MetricToUseForNodeLoad;
-        public string[] MetricWeightingScheme;
-        public string[] ConflictResolutionHeuristic;
-        public string[] MetricToUse;
-        public string[] UsageCurve;
-        public int[] NodesToReserve;
-        public double[] PenaltiesParameterThreshold;
-        public double[] ProbabilityOfViolationThreshold;
-        public int[] ProbabilityOfViolationMCRepetitions;
+        public string PlacementHeuristic;
+        public string MetricToUseForPlacement;
+        public string MetricToUseForNodeLoad;
+        public string MetricWeightingScheme;
+        public string ConflictResolutionHeuristic;
+        public string MetricToUse;
+        public string UsageCurve;
+        public int NodesToReserve;
+        public double PenaltiesParameterThreshold;
+        public double ProbabilityOfViolationThreshold;
+        public int ProbabilityOfViolationMCRepetitions;
         public bool ConsiderUpgrades;
 
         public static PlacementHeuristicEnum GetPlacementHeuristicAsEnum(

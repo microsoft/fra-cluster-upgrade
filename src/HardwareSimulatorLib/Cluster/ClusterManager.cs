@@ -130,7 +130,8 @@ namespace HardwareSimulatorLib.Cluster
 
             upgradeState = new UpgradeScheduleAndState(
                 Params.WarmupInHours, Params.IntervalBetweenUpgradesInHours,
-                NumUDs, Params.TimeToUpgradeSingleNodeInHours, simDuration);
+                NumUDs, Params.IsUpgradeUnidirectional,
+                Params.TimeToUpgradeSingleNodeInHours, simDuration);
             upgradeExecutor = UpgradeExecutor.Make(Params, this /*cluster*/);
             PlacementPreference = PlacementPreference.None;
 
@@ -189,14 +190,13 @@ namespace HardwareSimulatorLib.Cluster
             // of trying to place a tenant and failing.
             if (replicas.Length > 1)
             {
+                // TODO: consider the combination of all possible placements.
                 try
                 {
-                    PlaceReplica(timeElapsed, considerUpgradesDuringPlacement ?
-                                                replicas[1] : replicas[0]);
-                    PlaceReplica(timeElapsed, considerUpgradesDuringPlacement ?
-                                                replicas[0] : replicas[1]);
+                    PlaceReplica(timeElapsed, replicas[1]);
                     PlaceReplica(timeElapsed, replicas[2]);
                     PlaceReplica(timeElapsed, replicas[3]);
+                    PlaceReplica(timeElapsed, replicas[0]);
                 }
                 catch (Exception e)
                 {

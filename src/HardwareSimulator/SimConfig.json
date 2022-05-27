@@ -14,7 +14,7 @@
   "LookAheadOffset": 0,
   "MinPlacementTimeForLookAhead": -1,
   "SearchSpace": {
-    "OverbookingRatios": [ 2.1 ],
+    "OverbookingRatios": [ 1.5, 1.8, 2.1 ],
     "MemorySizesInGB": [ 441 ],
     "DiskSizesInGB": [ 5238 ],
     "VCoresPerNode": [ 80 ],
@@ -35,22 +35,23 @@
     "HardwareGeneration": "SQLG4VM"
   },
   "PlacementAlgorithm": {
-    "PlacementHeuristic": [ "WorstFit" ],
-    "MetricToUseForPlacement": [ "PredictedMaxValue" ],
-    "MetricToUseForNodeLoad": [ "CurrentValue" ],
-    "ConflictResolutionHeuristic": [ "LeastCongested" ],
-    "MetricToUse": [ "All" ],
-    "UsageCurve": [ "Real" ],
-    "NodesToReserve": [ 2 ],
-    "PenaltiesParameterThreshold": [ 0.25 ],
-    "ProbabilityOfViolationThreshold": [ 0.01 ],
-    "ProbabilityOfViolationMCRepetitions": [ 100 ],
-    "MetricWeightingScheme": [ "MinWeight" ],
+    "PlacementHeuristic": "WorstFit",
+    "MetricToUseForPlacement": "PredictedMaxValue",
+    "MetricToUseForNodeLoad": "CurrentValue" ,
+    "ConflictResolutionHeuristic": "LeastCongested",
+    "MetricToUse": "All",
+    "UsageCurve": "Real",
+    "NodesToReserve": 2,
+    "PenaltiesParameterThreshold": 0.25,
+    "ProbabilityOfViolationThreshold": 0.01,
+    "ProbabilityOfViolationMCRepetitions": 100,
+    "MetricWeightingScheme": "MinWeight",
     "ConsiderUpgrades": true
   },
   "UpgradeAlgorithm": {
     "Heuristic": "GreedilyFailoverPrimThenStdWithSort",
     "IntervalBetweenUpgradesInHours": 672,
-    "TimeToUpgradeSingleNodeInHours": 2
+    "TimeToUpgradeSingleNodeInHours": 2,
+    "IsUnidirectional": false
   }
 }
